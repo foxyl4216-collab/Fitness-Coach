@@ -73,7 +73,7 @@ export default function HomeScreen() {
       </View>
 
       <LinearGradient
-        colors={['#FF6B35', '#E55A25']}
+        colors={['#4ADE80', '#22C55E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.calorieCard}
@@ -234,12 +234,12 @@ const styles = StyleSheet.create({
   calorieTitle: {
     fontSize: 18,
     fontFamily: 'Rubik_600SemiBold',
-    color: Colors.white,
+    color: '#052e16',
   },
   calorieTarget: {
     fontSize: 13,
     fontFamily: 'Rubik_400Regular',
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(0,0,0,0.6)',
   },
   calorieBarContainer: {
     marginBottom: 16,
@@ -247,13 +247,13 @@ const styles = StyleSheet.create({
   calorieBarBg: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(0,0,0,0.15)',
     overflow: 'hidden',
   },
   calorieBarFill: {
     height: '100%',
     borderRadius: 4,
-    backgroundColor: Colors.white,
+    backgroundColor: '#052e16',
   },
   calorieStats: {
     flexDirection: 'row',
@@ -265,12 +265,12 @@ const styles = StyleSheet.create({
   calorieStatValue: {
     fontSize: 20,
     fontFamily: 'Rubik_700Bold',
-    color: Colors.white,
+    color: '#052e16',
   },
   calorieStatLabel: {
     fontSize: 12,
     fontFamily: 'Rubik_400Regular',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.5)',
     marginTop: 2,
   },
   sectionTitle: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,107,53,0.15)',
+    backgroundColor: 'rgba(74,222,128,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   weekDayToday: {
-    backgroundColor: 'rgba(255,107,53,0.15)',
+    backgroundColor: 'rgba(74,222,128,0.15)',
     borderWidth: 1,
     borderColor: Colors.primary,
   },

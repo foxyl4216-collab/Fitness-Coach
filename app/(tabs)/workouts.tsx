@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   workoutCardToday: {
-    backgroundColor: 'rgba(255,107,53,0.06)',
+    backgroundColor: 'rgba(74,222,128,0.06)',
   },
   pressed: {
     opacity: 0.7,

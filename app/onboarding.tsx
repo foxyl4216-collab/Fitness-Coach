@@ -300,13 +300,13 @@ export default function OnboardingScreen() {
               style={({ pressed }) => [styles.nextBtn, pressed && { opacity: 0.9 }, saving && { opacity: 0.5 }]}
             >
               <LinearGradient
-                colors={['#FF6B35', '#E55A25']}
+                colors={['#4ADE80', '#22C55E']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.nextBtnGradient}
               >
-                <Text style={styles.nextBtnText}>{saving ? 'Creating Plan...' : 'Generate My Plan'}</Text>
-                {!saving && <Ionicons name="arrow-forward" size={20} color={Colors.white} />}
+                <Text style={[styles.nextBtnText, { color: Colors.black }]}>{saving ? 'Creating Plan...' : 'Generate My Plan'}</Text>
+                {!saving && <Ionicons name="arrow-forward" size={20} color={Colors.black} />}
               </LinearGradient>
             </Pressable>
           ) : (
@@ -315,13 +315,13 @@ export default function OnboardingScreen() {
               style={({ pressed }) => [styles.nextBtn, pressed && { opacity: 0.9 }]}
             >
               <LinearGradient
-                colors={['#FF6B35', '#E55A25']}
+                colors={['#4ADE80', '#22C55E']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.nextBtnGradient}
               >
-                <Text style={styles.nextBtnText}>Continue</Text>
-                <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+                <Text style={[styles.nextBtnText, { color: Colors.black }]}>Continue</Text>
+                <Ionicons name="arrow-forward" size={20} color={Colors.black} />
               </LinearGradient>
             </Pressable>
           )}
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   optionCardSelected: {
     borderColor: Colors.primary,
-    backgroundColor: 'rgba(255,107,53,0.08)',
+    backgroundColor: 'rgba(74,222,128,0.08)',
   },
   optionIcon: {
     width: 48,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   optionIconSelected: {
-    backgroundColor: 'rgba(255,107,53,0.15)',
+    backgroundColor: 'rgba(74,222,128,0.15)',
   },
   optionText: {
     flex: 1,
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   smallOptionSelected: {
-    backgroundColor: 'rgba(255,107,53,0.12)',
+    backgroundColor: 'rgba(74,222,128,0.12)',
     borderColor: Colors.primary,
   },
   smallOptionText: {

@@ -214,12 +214,12 @@ export default function CheckInScreen() {
             style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.9 }, submitting && { opacity: 0.5 }]}
           >
             <LinearGradient
-              colors={['#FF6B35', '#E55A25']}
+              colors={['#4ADE80', '#22C55E']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.submitBtnGradient}
             >
-              <Text style={styles.submitBtnText}>
+              <Text style={[styles.submitBtnText, { color: Colors.black }]}>
                 {submitting ? 'Updating Plan...' : 'Submit Check-in'}
               </Text>
             </LinearGradient>
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   },
   adherenceBtnActive: {
     borderColor: Colors.primary,
-    backgroundColor: 'rgba(255,107,53,0.12)',
+    backgroundColor: 'rgba(74,222,128,0.12)',
   },
   adherenceBtnText: {
     fontSize: 13,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
   energyOptionActive: {
     borderColor: Colors.primary,
-    backgroundColor: 'rgba(255,107,53,0.08)',
+    backgroundColor: 'rgba(74,222,128,0.08)',
   },
   energyText: {
     fontSize: 13,
