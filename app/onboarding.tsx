@@ -18,7 +18,7 @@ import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import type { UserProfile } from '@/lib/storage';
 
-type Step = 'goal' | 'focus' | 'details' | 'lifestyle';
+type Step = 'goal' | 'details' | 'lifestyle';
 
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -37,7 +37,7 @@ export default function OnboardingScreen() {
   const [injuries, setInjuries] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const steps: Step[] = ['goal', 'focus', 'details', 'lifestyle'];
+  const steps: Step[] = ['goal', 'details', 'lifestyle'];
   const currentIndex = steps.indexOf(step);
   const progress = (currentIndex + 1) / steps.length;
 
@@ -161,47 +161,32 @@ export default function OnboardingScreen() {
               <Text style={styles.stepSubtitle}>Choose your primary fitness objective</Text>
 
               <OptionCard
-                selected={goal === 'fat_loss'}
-                onPress={() => setGoal('fat_loss')}
-                icon={<Ionicons name="flame" size={24} color={goal === 'fat_loss' ? Colors.primary : Colors.textMuted} />}
+                selected={goal === 'fat_loss' && focusTrack !== 'belly_fat'}
+                onPress={() => { setGoal('fat_loss'); setFocusTrack('none'); }}
+                icon={<Ionicons name="flame" size={24} color={goal === 'fat_loss' && focusTrack !== 'belly_fat' ? Colors.primary : Colors.textMuted} />}
                 title="Fat Loss"
                 subtitle="Lose body fat with structured training and a calorie deficit"
               />
               <OptionCard
-                selected={goal === 'muscle_gain'}
-                onPress={() => setGoal('muscle_gain')}
-                icon={<Ionicons name="barbell" size={24} color={goal === 'muscle_gain' ? Colors.primary : Colors.textMuted} />}
+                selected={goal === 'muscle_gain' && focusTrack !== 'glute_gain'}
+                onPress={() => { setGoal('muscle_gain'); setFocusTrack('none'); }}
+                icon={<Ionicons name="barbell" size={24} color={goal === 'muscle_gain' && focusTrack !== 'glute_gain' ? Colors.primary : Colors.textMuted} />}
                 title="Muscle Gain"
                 subtitle="Build lean muscle with progressive overload and a calorie surplus"
               />
-            </>
-          )}
-
-          {step === 'focus' && (
-            <>
-              <Text style={styles.stepTitle}>Focus Track</Text>
-              <Text style={styles.stepSubtitle}>Optional area of emphasis for your training</Text>
-
-              <OptionCard
-                selected={focusTrack === 'none'}
-                onPress={() => setFocusTrack('none')}
-                icon={<Ionicons name="fitness" size={24} color={focusTrack === 'none' ? Colors.primary : Colors.textMuted} />}
-                title="General Fitness"
-                subtitle="Balanced full-body approach"
-              />
               <OptionCard
                 selected={focusTrack === 'belly_fat'}
-                onPress={() => setFocusTrack('belly_fat')}
+                onPress={() => { setGoal('fat_loss'); setFocusTrack('belly_fat'); }}
                 icon={<MaterialCommunityIcons name="stomach" size={24} color={focusTrack === 'belly_fat' ? Colors.primary : Colors.textMuted} />}
                 title="Reduce Belly Fat"
-                subtitle="Extra core work and activity circuits"
+                subtitle="Fat loss with extra core work and activity circuits"
               />
               <OptionCard
                 selected={focusTrack === 'glute_gain'}
-                onPress={() => setFocusTrack('glute_gain')}
+                onPress={() => { setGoal('muscle_gain'); setFocusTrack('glute_gain'); }}
                 icon={<MaterialCommunityIcons name="human-female-dance" size={24} color={focusTrack === 'glute_gain' ? Colors.primary : Colors.textMuted} />}
                 title="Glute Growth"
-                subtitle="Lower body emphasis with glute hypertrophy"
+                subtitle="Muscle gain with lower body emphasis and glute hypertrophy"
               />
 
               {focusTrack === 'belly_fat' && (
