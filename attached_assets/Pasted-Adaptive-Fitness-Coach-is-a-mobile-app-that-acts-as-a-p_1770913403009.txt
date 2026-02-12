@@ -1,0 +1,405 @@
+Adaptive Fitness Coach is a mobile app that acts as a personalized digital fitness coach. Users define fitness goals and receive adaptive weekly workout and diet plans based on structured check-ins.
+
+The app supports:
+
+Fat loss coaching
+
+Skinny muscle gain coaching
+
+Belly fat focus track
+
+Glute gain focus track
+
+Manual + AI-assisted calorie tracking
+
+The system adapts weekly using measurable inputs (weight, adherence, energy levels), creating a coaching loop similar to a human trainer.
+
+The MVP focuses on safe, beginner-friendly fitness guidance without medical or visual body analysis.
+
+2. Product Goals
+Primary Goals
+
+Deliver personalized weekly training and diet plans
+
+Adapt calories and workouts based on real progress
+
+Improve retention through coaching feedback
+
+Simplify calorie tracking
+
+Provide a clear, structured fitness journey
+
+Success Metrics
+
+4-week retention rate
+
+Weekly check-in completion %
+
+Plan adherence %
+
+Paid conversion rate
+
+User satisfaction score
+
+3. Target Users
+Segment A: Fat Loss Users
+
+Overweight or average beginners
+
+Want structured guidance
+
+Segment B: Muscle Gain Users
+
+Skinny or lean beginners
+
+Want hypertrophy coaching
+
+Optional focus tracks:
+
+Reduce belly fat
+
+Glute gain
+
+Focus tracks adjust training emphasis.
+
+4. Core Value Proposition
+
+A digital fitness coach that adapts weekly and explains its decisions.
+
+Not generic workouts.
+Not static diet PDFs.
+Not medical advice.
+
+A structured adaptive coaching system.
+
+5. User Journey
+Step 1: Authentication
+
+Email/password
+
+Google login
+
+Step 2: Onboarding
+
+User completes:
+
+Goal selection (fat loss / muscle gain)
+
+Focus track:
+
+None
+
+Reduce belly fat
+
+Glute gain
+
+Questionnaire:
+
+Age
+
+Height
+
+Current weight
+
+Training experience
+
+Diet preference
+
+Equipment access
+
+Weekly availability
+
+Injury declaration (optional)
+
+Step 3: Week 1 Plan Delivery
+
+System generates:
+
+Weekly workout plan
+
+Exercise schedule
+
+Daily calorie target
+
+Diet guidance
+
+Calorie tracker activated
+
+Step 4: Weekly Check-In (Saturday)
+
+User submits:
+
+Current weight
+
+Adherence %
+
+Energy level (low / normal / high)
+
+Waist measurement (optional)
+
+Step 5: Adaptive Plan Update
+
+System adjusts:
+
+Calories
+
+Workout volume
+
+Cardio load
+
+Recovery
+
+Includes explanation text.
+
+Cycle repeats weekly.
+
+6. Features
+6.1 Workout Engine
+Fat Loss Logic
+
+15–20% calorie deficit
+
+Full-body circuits
+
+Cardio emphasis
+
+Core strengthening
+
+Muscle Gain Logic
+
++250 kcal surplus start
+
+Progressive overload
+
+Compound lifts
+
+Limited cardio
+
+Belly Fat Focus Track
+
+Adds:
+
+Core training emphasis
+
+Activity circuits
+
+Waist tracking
+
+Disclaimer:
+
+Spot fat reduction is not guaranteed.
+
+Glute Gain Focus Track
+
+Adds:
+
+Glute hypertrophy emphasis
+
+Lower body overload
+
+Recovery management
+
+6.2 Diet System
+
+Daily calorie target
+
+Protein guidance
+
+Simple meal suggestions
+
+Indian-friendly foods
+
+No medical claims
+
+6.3 Calorie Tracker
+Manual Logging
+
+Add foods manually
+
+Enter calories
+
+Save frequent meals
+
+Camera Logging
+
+User takes food photo:
+
+AI estimates:
+
+Food type
+
+Portion size
+
+Calories
+
+User confirms or edits entry.
+
+Disclaimer:
+
+Calorie estimates are approximate.
+
+Tracker displays:
+
+Daily total
+
+Remaining calories
+
+Weekly averages
+
+Simple charts
+
+6.4 Weekly Adaptation Engine
+Fat Loss Rules
+
+No weight drop → -150 kcal
+
+Low energy → reduce volume
+
+Muscle Gain Rules
+
+No weight gain → +200 kcal
+
+Excess fat → slow surplus
+
+Belly Focus
+
+Monitor waist trend
+
+Adjust cardio
+
+Glute Focus
+
+Monitor fatigue
+
+Adjust lower-body volume
+
+Every change includes explanation text.
+
+6.5 Subscription System
+Free Tier
+
+Week 1 plan
+
+Basic calorie tracking
+
+Paid Tier
+
+Weekly adaptive coaching
+
+Focus tracks
+
+Ongoing plan updates
+
+Progress history
+
+7. Non-Functional Requirements
+
+Fast onboarding (<2 minutes)
+
+Scalable backend
+
+Smooth UI
+
+Offline plan viewing
+
+Secure data storage
+
+Privacy compliant
+
+8. Legal & Safety Requirements
+
+Mandatory disclaimers:
+
+Not medical advice
+
+Results not guaranteed
+
+Calorie estimates approximate
+
+Consult professionals if needed
+
+Avoid:
+
+Medical diagnosis
+
+Guaranteed body changes
+
+9. Technical Architecture
+
+Frontend:
+
+Flutter app
+
+Backend:
+
+Cloud database
+
+Authentication
+
+Plan engine
+
+AI layer:
+
+Food recognition
+
+Plan explanations
+
+Rules engine controls logic.
+
+10. MVP Scope
+
+Included:
+
+Onboarding
+
+Goals + focus tracks
+
+Plan generation
+
+Weekly adaptation
+
+Manual + camera calorie tracking
+
+Subscription
+
+Excluded:
+
+Photo body tracking
+
+Social features
+
+Wearables
+
+Community feed
+
+11. Risks
+
+Unrealistic expectations
+
+AI calorie inaccuracies
+
+Early churn
+
+Legal claims
+
+Mitigation:
+
+Clear disclaimers
+
+Conservative adjustments
+
+Transparent explanations
+
+12. Future Roadmap
+
+Body photo tracking (later)
+
+Wearable sync
+
+Strength tracking
+
+Habit coaching
+
+AI meal scanning upgrades
+
+Community features
