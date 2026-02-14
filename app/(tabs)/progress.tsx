@@ -10,16 +10,29 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import { useAuth } from '@/lib/auth-context';
 import { router } from 'expo-router';
 
-export default function ProgressScreen() {
+export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { profile, plan, checkIns, weekNumber, resetApp } = useFitCoach();
   const { logout, user } = useAuth();
+
+  const displayName = useMemo(() => {
+    if (user?.email) {
+      const local = user.email.split('@')[0];
+      return local.charAt(0).toUpperCase() + local.slice(1);
+    }
+    return 'User';
+  }, [user]);
+
+  const initials = useMemo(() => {
+    return displayName.slice(0, 2).toUpperCase();
+  }, [displayName]);
 
   const weightData = useMemo(() => {
     if (!profile) return [];
@@ -63,10 +76,16 @@ export default function ProgressScreen() {
     );
   };
 
+  const handleLogout = async () => {
+    await resetApp();
+    await logout();
+    router.replace('/login');
+  };
+
   if (!profile || !plan) {
     return (
       <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
-        <Text style={styles.emptyText}>Complete onboarding to see your progress</Text>
+        <Text style={styles.emptyText}>Complete onboarding to see your profile</Text>
       </View>
     );
   }
@@ -80,13 +99,81 @@ export default function ProgressScreen() {
       }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Progress</Text>
+      <View style={styles.profileHeader}>
+        <LinearGradient
+          colors={['#4ADE80', '#22C55E']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.avatar}
+        >
+          <Text style={styles.avatarText}>{initials}</Text>
+        </LinearGradient>
+        <Text style={styles.userName}>{displayName}</Text>
+        {user?.email && (
+          <Text style={styles.userEmail}>{user.email}</Text>
+        )}
+        <View style={styles.goalBadge}>
+          <Ionicons
+            name={profile.goal === 'fat_loss' ? 'flame' : 'barbell'}
+            size={14}
+            color={Colors.primary}
+          />
+          <Text style={styles.goalBadgeText}>
+            {profile.goal === 'fat_loss' ? 'Fat Loss' : 'Muscle Gain'}
+            {profile.focusTrack !== 'none' && (
+              ` · ${profile.focusTrack === 'belly_fat' ? 'Belly Focus' : 'Glute Focus'}`
+            )}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.detailsCard}>
+        <View style={styles.detailRow}>
+          <View style={styles.detailIconWrap}>
+            <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
+          </View>
+          <Text style={styles.detailLabel}>Current Week</Text>
+          <Text style={styles.detailValue}>{weekNumber}</Text>
+        </View>
+        <View style={styles.detailDivider} />
+        <View style={styles.detailRow}>
+          <View style={styles.detailIconWrap}>
+            <Ionicons name="flame-outline" size={16} color={Colors.primary} />
+          </View>
+          <Text style={styles.detailLabel}>Daily Calories</Text>
+          <Text style={styles.detailValue}>{plan.dailyCalories} kcal</Text>
+        </View>
+        <View style={styles.detailDivider} />
+        <View style={styles.detailRow}>
+          <View style={styles.detailIconWrap}>
+            <MaterialCommunityIcons name="food-drumstick-outline" size={16} color={Colors.primary} />
+          </View>
+          <Text style={styles.detailLabel}>Protein Target</Text>
+          <Text style={styles.detailValue}>{plan.proteinGrams}g</Text>
+        </View>
+        <View style={styles.detailDivider} />
+        <View style={styles.detailRow}>
+          <View style={styles.detailIconWrap}>
+            <Ionicons name="scale-outline" size={16} color={Colors.primary} />
+          </View>
+          <Text style={styles.detailLabel}>Starting Weight</Text>
+          <Text style={styles.detailValue}>{profile.weightKg} kg</Text>
+        </View>
+        <View style={styles.detailDivider} />
+        <View style={styles.detailRow}>
+          <View style={styles.detailIconWrap}>
+            <Ionicons name="body-outline" size={16} color={Colors.primary} />
+          </View>
+          <Text style={styles.detailLabel}>Experience</Text>
+          <Text style={styles.detailValue}>
+            {profile.experience === 'beginner' ? 'Beginner' : profile.experience === 'some' ? 'Intermediate' : 'Experienced'}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={styles.sectionTitle}>{displayName}'s Progress</Text>
 
       <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{profile.weightKg}</Text>
-          <Text style={styles.statLabel}>start kg</Text>
-        </View>
         <View style={styles.statCard}>
           <Text style={[
             styles.statValue,
@@ -102,8 +189,8 @@ export default function ProgressScreen() {
           <Text style={styles.statLabel}>adherence</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statValue}>{weekNumber}</Text>
-          <Text style={styles.statLabel}>week</Text>
+          <Text style={styles.statValue}>{checkIns.length}</Text>
+          <Text style={styles.statLabel}>check-ins</Text>
         </View>
       </View>
 
@@ -179,51 +266,16 @@ export default function ProgressScreen() {
         ))
       )}
 
-      <View style={styles.profileSection}>
-        <Text style={styles.sectionTitle}>Profile</Text>
-        <View style={styles.profileCard}>
-          <View style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Goal</Text>
-            <Text style={styles.profileValue}>
-              {profile.goal === 'fat_loss' ? 'Fat Loss' : 'Muscle Gain'}
-            </Text>
-          </View>
-          <View style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Focus</Text>
-            <Text style={styles.profileValue}>
-              {profile.focusTrack === 'none' ? 'General' : profile.focusTrack === 'belly_fat' ? 'Belly Fat' : 'Glute Gain'}
-            </Text>
-          </View>
-          <View style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Daily Calories</Text>
-            <Text style={styles.profileValue}>{plan.dailyCalories} kcal</Text>
-          </View>
-          <View style={styles.profileRow}>
-            <Text style={styles.profileLabel}>Protein Target</Text>
-            <Text style={styles.profileValue}>{plan.proteinGrams}g</Text>
-          </View>
-        </View>
-
-        <Pressable onPress={handleReset} style={styles.resetButton}>
+      <View style={styles.actionsSection}>
+        <Pressable onPress={handleReset} style={styles.actionButton}>
           <Ionicons name="refresh" size={18} color={Colors.error} />
-          <Text style={styles.resetText}>Start Over</Text>
+          <Text style={styles.actionTextDanger}>Start Over</Text>
         </Pressable>
-
-        <Pressable
-          onPress={async () => {
-            await resetApp();
-            await logout();
-            router.replace('/login');
-          }}
-          style={styles.logoutButton}
-        >
+        <View style={styles.actionDivider} />
+        <Pressable onPress={handleLogout} style={styles.actionButton}>
           <Ionicons name="log-out-outline" size={18} color={Colors.textSecondary} />
-          <Text style={styles.logoutText}>Sign Out</Text>
+          <Text style={styles.actionText}>Sign Out</Text>
         </Pressable>
-
-        {user?.email ? (
-          <Text style={styles.emailText}>{user.email}</Text>
-        ) : null}
       </View>
     </ScrollView>
   );
@@ -234,19 +286,101 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  title: {
-    fontSize: 28,
-    fontFamily: 'Rubik_700Bold',
-    color: Colors.text,
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
   emptyText: {
     fontSize: 16,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 100,
+  },
+  profileHeader: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  avatarText: {
+    fontSize: 28,
+    fontFamily: 'Rubik_700Bold',
+    color: '#052e16',
+  },
+  userName: {
+    fontSize: 24,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.text,
+  },
+  userEmail: {
+    fontSize: 14,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    marginTop: 4,
+  },
+  goalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(74,222,128,0.12)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 12,
+  },
+  goalBadgeText: {
+    fontSize: 13,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.primary,
+  },
+  detailsCard: {
+    marginHorizontal: 20,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 28,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+  },
+  detailIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  detailLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textSecondary,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.text,
+  },
+  detailDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: 14,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.text,
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
   statsRow: {
     flexDirection: 'row',
@@ -274,13 +408,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
     marginTop: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
-    paddingHorizontal: 20,
-    marginBottom: 12,
   },
   chartCard: {
     marginHorizontal: 20,
@@ -342,7 +469,7 @@ const styles = StyleSheet.create({
   firstCheckInText: {
     fontSize: 14,
     fontFamily: 'Rubik_600SemiBold',
-    color: Colors.white,
+    color: Colors.black,
   },
   checkInCard: {
     marginHorizontal: 20,
@@ -381,66 +508,34 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
   },
-  profileSection: {
-    marginTop: 16,
-  },
-  profileCard: {
+  actionsSection: {
     marginHorizontal: 20,
     backgroundColor: Colors.card,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 16,
+    marginTop: 16,
     marginBottom: 16,
+    overflow: 'hidden',
   },
-  profileRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  profileLabel: {
-    fontSize: 14,
-    fontFamily: 'Rubik_400Regular',
-    color: Colors.textSecondary,
-  },
-  profileValue: {
-    fontSize: 14,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
-  },
-  resetButton: {
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
-    marginHorizontal: 20,
-    marginBottom: 16,
+    paddingVertical: 16,
   },
-  resetText: {
+  actionDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: 16,
+  },
+  actionTextDanger: {
     fontSize: 15,
     fontFamily: 'Rubik_500Medium',
     color: Colors.error,
   },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    marginHorizontal: 20,
-    marginBottom: 8,
-  },
-  logoutText: {
+  actionText: {
     fontSize: 15,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
-  },
-  emailText: {
-    fontSize: 13,
-    fontFamily: 'Rubik_400Regular',
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginBottom: 16,
   },
 });
