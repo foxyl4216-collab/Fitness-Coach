@@ -1,0 +1,215 @@
+Now extend the existing frontend to support Supabase authentication, diet plans, and calorie tracking for a fitness coaching app.
+
+Do NOT rebuild the app.
+Enhance the current frontend.
+
+Use modern React + clean architecture.
+
+---
+
+STEP 1 — Supabase Frontend Setup
+
+Install:
+
+@supabase/supabase-js
+
+Create:
+
+/config/supabase.js
+
+Initialize Supabase client using environment variables:
+
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+
+Do not hardcode keys.
+
+---
+
+STEP 2 — Authentication UI
+
+Create screens:
+
+/pages/Login.jsx
+/pages/Signup.jsx
+
+Features:
+
+Signup:
+- email
+- password
+- confirm password
+- validation
+- error handling
+
+Login:
+- email
+- password
+- session persistence
+
+After login:
+Redirect to dashboard.
+
+Store session securely.
+
+---
+
+STEP 3 — Auth Context
+
+Create:
+
+/context/AuthContext.jsx
+
+Responsibilities:
+
+- Manage user session
+- Auto-login if token exists
+- Logout handling
+- Protect private routes
+
+Wrap app with AuthProvider.
+
+---
+
+STEP 4 — Protected Routes
+
+Create:
+
+/components/ProtectedRoute.jsx
+
+Users must be logged in to access:
+
+- Dashboard
+- Diet plan
+- Calorie tracker
+- Weekly check-in
+
+Redirect unauthorized users to login.
+
+---
+
+STEP 5 — Dashboard Screen
+
+Create:
+
+/pages/Dashboard.jsx
+
+Show:
+
+- Current calorie target
+- Weekly goal summary
+- Today’s calories
+- Quick add food button
+- Link to diet plan
+- Link to check-in
+
+Fetch data from backend API.
+
+---
+
+STEP 6 — Diet Plan Screen
+
+Create:
+
+/pages/DietPlan.jsx
+
+Features:
+
+- Fetch user diet plan
+- Show weekly meals
+- Display calorie + protein targets
+- Clean card UI
+- Loading + error states
+
+GET /diet-plan/current
+
+---
+
+STEP 7 — Calorie Tracker Screen
+
+Create:
+
+/pages/Calories.jsx
+
+Features:
+
+Manual Entry Form:
+- food name
+- calories
+- submit button
+
+Camera Entry Button:
+- upload meal image
+- send to backend
+
+Daily Log List:
+- foods added today
+- total calories
+- remaining calories
+
+Endpoints:
+
+POST /calorie-log/manual
+POST /calorie-log/camera
+GET /calorie-log/daily
+
+---
+
+STEP 8 — API Service Layer
+
+Create:
+
+/services/api.js
+
+Centralized API calls:
+
+- auth requests
+- diet requests
+- calorie requests
+
+Handle tokens automatically.
+
+Use fetch or axios.
+
+---
+
+STEP 9 — UI State Handling
+
+Add:
+
+- Loading indicators
+- Error messages
+- Empty states
+- Success feedback
+
+No silent failures.
+
+---
+
+STEP 10 — Folder Structure
+
+/src
+  /config
+  /context
+  /pages
+  /components
+  /services
+
+Clean modular architecture.
+
+---
+
+STEP 11 — Output
+
+Provide:
+
+1. Full React components
+2. Auth context implementation
+3. API service layer
+4. Supabase config
+5. Route protection logic
+6. Example usage
+
+Do not redesign existing UI.
+Integrate into current app structure.
+Production-ready frontend code only.
