@@ -11,7 +11,9 @@ MVP complete with:
 - Weekly workout schedule with detail view
 - Manual calorie tracker with favorites
 - Camera-based calorie logging (AI estimated)
-- Diet plan API with personalized meal structure
+- AI-powered diet plan generation (GPT-5-nano via OpenAI integration) with Diet tab UI
+- Diet plan screen with expandable meal cards, macro targets, and tips
+- Weekly diet adaptation based on check-in weight trends
 - Weekly check-in with adaptive plan updates
 - Progress history with weight trend chart
 - Profile management with reset option
@@ -48,6 +50,8 @@ All data routes require `Authorization: Bearer <token>` header.
 - `GET /api/weekly-plan/current` - Get latest plan
 
 ### Diet Plans
+- `POST /api/diet-plan/generate` - AI-generates personalized diet plan from user profile (calculates macros + GPT meal plan)
+- `POST /api/diet-plan/adapt-week` - Adapts diet plan based on weekly check-in weight trends
 - `POST /api/diet-plan/create` - Create/update diet plan (week_number, calorie_target, protein_target, diet_json)
 - `GET /api/diet-plan/current` - Get latest diet plan
 
@@ -97,6 +101,7 @@ All data routes require `Authorization: Bearer <token>` header.
 - `app/onboarding.tsx` - 4-step onboarding flow
 - `app/(tabs)/index.tsx` - Dashboard/home screen
 - `app/(tabs)/workouts.tsx` - Weekly workout list
+- `app/(tabs)/diet.tsx` - AI diet plan with expandable meal cards and macro targets
 - `app/(tabs)/tracker.tsx` - Calorie tracker with food logging
 - `app/(tabs)/progress.tsx` - Progress history, profile, and logout
 - `app/workout-detail.tsx` - Exercise detail view
