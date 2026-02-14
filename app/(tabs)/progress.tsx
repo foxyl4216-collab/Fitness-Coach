@@ -150,8 +150,12 @@ export default function ProfileScreen() {
 
   if (!profile || !plan) {
     return (
-      <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top, justifyContent: 'space-between' }]}>
         <Text style={styles.emptyText}>Complete onboarding to see your profile</Text>
+        <Pressable onPress={handleLogout} style={[styles.logoutButton, { marginBottom: Platform.OS === 'web' ? 34 : Math.max(insets.bottom, 20) }]}>
+          <Ionicons name="log-out-outline" size={18} color={Colors.error} />
+          <Text style={styles.logoutText}>Sign Out</Text>
+        </Pressable>
       </View>
     );
   }
