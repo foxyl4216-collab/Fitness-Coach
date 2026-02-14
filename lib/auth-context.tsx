@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiRequest } from './query-client';
+import { apiRequest, getApiUrl } from './query-client';
+import { getStoredToken, setStoredToken } from './auth-token';
 
 const AUTH_KEYS = {
   ACCESS_TOKEN: 'fitcoach_access_token',
@@ -26,19 +27,24 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-let _currentToken: string | null = null;
-
-export function getStoredToken(): string | null {
-  return _currentToken;
-}
+export { getStoredToken };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getBaseUrl = () => {
+    try {
+      return getApiUrl().replace(/\/$/, '');
+    } catch {
+      const host = process.env.EXPO_PUBLIC_DOMAIN;
+      return host ? `https://${host}` : '';
+    }
+  };
+
   const saveSession = async (userData: AuthUser, access: string, refresh: string) => {
-    _currentToken = access;
+    setStoredToken(access);
     setUser(userData);
     setAccessToken(access);
     await Promise.all([
@@ -49,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const clearSession = async () => {
-    _currentToken = null;
+    setStoredToken(null);
     setUser(null);
     setAccessToken(null);
     await Promise.all([
@@ -70,16 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (storedToken && storedUser) {
           const userData = JSON.parse(storedUser) as AuthUser;
-          _currentToken = storedToken;
+          setStoredToken(storedToken);
           setUser(userData);
           setAccessToken(storedToken);
 
           try {
-            const res = await fetch(getApiBase() + '/api/auth/me', {
+            const baseUrl = getBaseUrl();
+            const res = await fetch(baseUrl + '/api/auth/me', {
               headers: { Authorization: `Bearer ${storedToken}` },
             });
             if (!res.ok && storedRefresh) {
-              const refreshRes = await fetch(getApiBase() + '/api/auth/refresh', {
+              const refreshRes = await fetch(baseUrl + '/api/auth/refresh', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ refresh_token: storedRefresh }),
@@ -133,7 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try {
       if (accessToken) {
-        await fetch(getApiBase() + '/api/auth/logout', {
+        const baseUrl = getBaseUrl();
+        await fetch(baseUrl + '/api/auth/logout', {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -145,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken]);
 
   const getToken = useCallback(async (): Promise<string | null> => {
-    return _currentToken;
+    return getStoredToken();
   }, []);
 
   const value = useMemo(() => ({
@@ -170,10 +178,4 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
-}
-
-function getApiBase(): string {
-  const host = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!host) throw new Error('EXPO_PUBLIC_DOMAIN is not set');
-  return `https://${host}`;
 }

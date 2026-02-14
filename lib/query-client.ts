@@ -1,6 +1,6 @@
 import { fetch } from "expo/fetch";
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { getStoredToken } from "./auth-context";
+import { getStoredToken } from "./auth-token";
 
 export function getApiUrl(): string {
   let host = process.env.EXPO_PUBLIC_DOMAIN;
