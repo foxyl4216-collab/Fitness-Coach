@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const KEYS = {
   PROFILE: 'fitcoach_profile',
   CURRENT_PLAN: 'fitcoach_current_plan',
+  DIET_PLAN: 'fitcoach_diet_plan',
   CHECKINS: 'fitcoach_checkins',
   FOOD_LOG: 'fitcoach_food_log',
   SAVED_FOODS: 'fitcoach_saved_foods',
@@ -72,6 +73,37 @@ export interface SavedFood {
   name: string;
   calories: number;
   protein?: number;
+}
+
+export interface DietPlanFood {
+  name: string;
+  quantity: string;
+  calories: number;
+  protein: number;
+}
+
+export interface DietPlanMeal {
+  meal: string;
+  time: string;
+  foods: DietPlanFood[];
+  total_calories: number;
+  total_protein: number;
+}
+
+export interface DietPlan {
+  id?: string;
+  weekNumber: number;
+  calorieTarget: number;
+  proteinTarget: number;
+  meals: DietPlanMeal[];
+  dailyTotals: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  notes: string[];
+  createdAt?: string;
 }
 
 export async function saveProfile(profile: UserProfile): Promise<void> {
@@ -144,6 +176,15 @@ export async function addSavedFood(food: SavedFood): Promise<void> {
     existing.push(food);
     await AsyncStorage.setItem(KEYS.SAVED_FOODS, JSON.stringify(existing));
   }
+}
+
+export async function saveDietPlan(plan: DietPlan): Promise<void> {
+  await AsyncStorage.setItem(KEYS.DIET_PLAN, JSON.stringify(plan));
+}
+
+export async function getDietPlan(): Promise<DietPlan | null> {
+  const data = await AsyncStorage.getItem(KEYS.DIET_PLAN);
+  return data ? JSON.parse(data) : null;
 }
 
 export async function clearAllData(): Promise<void> {
