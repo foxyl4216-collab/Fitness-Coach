@@ -13,11 +13,13 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
+import { useAuth } from '@/lib/auth-context';
 import { router } from 'expo-router';
 
 export default function ProgressScreen() {
   const insets = useSafeAreaInsets();
   const { profile, plan, checkIns, weekNumber, resetApp } = useFitCoach();
+  const { logout, user } = useAuth();
 
   const weightData = useMemo(() => {
     if (!profile) return [];
@@ -206,6 +208,22 @@ export default function ProgressScreen() {
           <Ionicons name="refresh" size={18} color={Colors.error} />
           <Text style={styles.resetText}>Start Over</Text>
         </Pressable>
+
+        <Pressable
+          onPress={async () => {
+            await resetApp();
+            await logout();
+            router.replace('/login');
+          }}
+          style={styles.logoutButton}
+        >
+          <Ionicons name="log-out-outline" size={18} color={Colors.textSecondary} />
+          <Text style={styles.logoutText}>Sign Out</Text>
+        </Pressable>
+
+        {user?.email ? (
+          <Text style={styles.emailText}>{user.email}</Text>
+        ) : null}
       </View>
     </ScrollView>
   );
@@ -403,5 +421,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Rubik_500Medium',
     color: Colors.error,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    marginHorizontal: 20,
+    marginBottom: 8,
+  },
+  logoutText: {
+    fontSize: 15,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.textSecondary,
+  },
+  emailText: {
+    fontSize: 13,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 16,
   },
 });

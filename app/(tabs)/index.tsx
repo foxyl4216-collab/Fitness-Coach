@@ -14,18 +14,23 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
+import { useAuth } from '@/lib/auth-context';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { profile, plan, isOnboarded, isLoading, foodLog, weekNumber, checkIns } = useFitCoach();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && !isOnboarded) {
+    if (authLoading || isLoading) return;
+    if (!isAuthenticated) {
+      router.replace('/login');
+    } else if (!isOnboarded) {
       router.replace('/onboarding');
     }
-  }, [isLoading, isOnboarded]);
+  }, [isLoading, isOnboarded, isAuthenticated, authLoading]);
 
-  if (isLoading || !isOnboarded || !profile || !plan) {
+  if (authLoading || isLoading || !isAuthenticated || !isOnboarded || !profile || !plan) {
     return <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]} />;
   }
 
