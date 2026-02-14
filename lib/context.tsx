@@ -269,7 +269,16 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated) return;
     setDietLoading(true);
     try {
-      const res = await apiRequest('POST', '/api/diet-plan/generate');
+      const profilePayload = profile ? {
+        weight: profile.weightKg,
+        height: profile.heightCm,
+        age: profile.age,
+        goal_type: profile.goal,
+        diet_preference: profile.dietPreference,
+        focus_track: profile.focusTrack,
+        experience_level: profile.experience,
+      } : undefined;
+      const res = await apiRequest('POST', '/api/diet-plan/generate', { profile: profilePayload });
       const data = await res.json();
       if (data.diet_plan) {
         const newDiet: Storage.DietPlan = {

@@ -13,13 +13,13 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
 
     let profile: any = null;
 
-    const { data: userProfile, error: userProfileError } = await userDb
+    const { data: userProfile } = await userDb
       .from("user_profiles")
       .select("*")
       .eq("user_id", req.userId!)
       .single();
 
-    if (userProfile && !userProfileError) {
+    if (userProfile) {
       profile = userProfile;
     } else {
       const { data: adminProfile } = await supabase
@@ -28,6 +28,20 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
         .eq("user_id", req.userId!)
         .single();
       profile = adminProfile;
+    }
+
+    if (!profile && req.body.profile) {
+      const p = req.body.profile;
+      profile = {
+        user_id: req.userId,
+        weight: p.weight || 70,
+        height: p.height || 170,
+        age: p.age || 25,
+        goal_type: p.goalType || p.goal_type || "fat_loss",
+        diet_preference: p.dietPreference || p.diet_preference || "standard",
+        focus_track: p.focusTrack || p.focus_track || "general",
+        experience_level: p.experienceLevel || p.experience_level || "beginner",
+      };
     }
 
     if (!profile) {
@@ -138,6 +152,18 @@ router.post("/adapt-week", requireAuth, async (req: AuthenticatedRequest, res) =
         .eq("user_id", req.userId!)
         .single();
       profile = adminProfile;
+    }
+
+    if (!profile && req.body.profile) {
+      const p = req.body.profile;
+      profile = {
+        user_id: req.userId,
+        weight: p.weight || 70,
+        height: p.height || 170,
+        age: p.age || 25,
+        goal_type: p.goalType || p.goal_type || "fat_loss",
+        diet_preference: p.dietPreference || p.diet_preference || "standard",
+      };
     }
 
     if (!profile) {
