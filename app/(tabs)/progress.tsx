@@ -336,17 +336,10 @@ export default function ProfileScreen() {
           ))
         )}
 
-        <View style={styles.actionsSection}>
-          <Pressable onPress={handleReset} style={styles.actionButton}>
-            <Ionicons name="refresh" size={18} color={Colors.error} />
-            <Text style={styles.actionTextDanger}>Start Over</Text>
-          </Pressable>
-          <View style={styles.actionDivider} />
-          <Pressable onPress={handleLogout} style={styles.actionButton}>
-            <Ionicons name="log-out-outline" size={18} color={Colors.textSecondary} />
-            <Text style={styles.actionText}>Sign Out</Text>
-          </Pressable>
-        </View>
+        <Pressable onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={18} color={Colors.error} />
+          <Text style={styles.logoutText}>Sign Out</Text>
+        </Pressable>
       </ScrollView>
 
       <Modal
@@ -660,35 +653,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
   },
-  actionsSection: {
-    marginHorizontal: 20,
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  actionButton: {
+  logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    marginHorizontal: 20,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
     paddingVertical: 16,
+    marginTop: 16,
+    marginBottom: 16,
   },
-  actionDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginHorizontal: 16,
-  },
-  actionTextDanger: {
+  logoutText: {
     fontSize: 15,
     fontFamily: 'Rubik_500Medium',
     color: Colors.error,
-  },
-  actionText: {
-    fontSize: 15,
-    fontFamily: 'Rubik_500Medium',
-    color: Colors.textSecondary,
   },
   modalOverlay: {
     flex: 1,
