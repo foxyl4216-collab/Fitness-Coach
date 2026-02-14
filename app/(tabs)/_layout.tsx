@@ -18,6 +18,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "dumbbell", selected: "dumbbell.fill" }} />
         <Label>Workouts</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="diet">
+        <Icon sf={{ default: "leaf", selected: "leaf.fill" }} />
+        <Label>Diet</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="tracker">
         <Icon sf={{ default: "fork.knife", selected: "fork.knife" }} />
         <Label>Tracker</Label>
@@ -75,6 +79,15 @@ function ClassicTabLayout() {
           title: "Workouts",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="barbell" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="diet"
+        options={{
+          title: "Diet",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="leaf" size={size} color={color} />
           ),
         }}
       />
