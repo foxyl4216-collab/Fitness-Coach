@@ -1,0 +1,198 @@
+Now connect Supabase to this existing project and implement backend infrastructure for a fitness coaching app.
+
+Act as a senior full-stack engineer. Do not rebuild the frontend. Only add backend logic, database integration, and Supabase connection.
+
+Use Node.js + Express.
+
+Goal:
+Authenticate users and store fitness app data securely using Supabase.
+
+---
+
+STEP 1 — Install Dependencies
+
+Install:
+
+- @supabase/supabase-js
+- express
+- dotenv
+- cors
+- body-parser
+- helmet
+
+Use best practices.
+
+---
+
+STEP 2 — Supabase Setup
+
+Create:
+
+/config/supabase.js
+
+Initialize Supabase client using environment variables:
+
+SUPABASE_URL - https://hmbcxlameigebqdhgthr.supabase.co
+SUPABASE_ANON_KEY -eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtYmN4bGFtZWlnZWJxZGhndGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMDAxMTYsImV4cCI6MjA4NjU3NjExNn0.SqFZtB2JpbF-IkYYj9Akcfi2--7vTvT_U6wNBodawx8
+
+Do NOT hardcode keys.
+
+---
+
+STEP 3 — Environment Config
+
+Create .env template:
+
+SUPABASE_URL= https://hmbcxlameigebqdhgthr.supabase.co
+SUPABASE_ANON_KEY= eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhtYmN4bGFtZWlnZWJxZGhndGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMDAxMTYsImV4cCI6MjA4NjU3NjExNn0.SqFZtB2JpbF-IkYYj9Akcfi2--7vTvT_U6wNBodawx8
+PORT=3000
+
+Load environment variables securely.
+
+---
+
+STEP 4 — Database Schema (SQL)
+
+Generate SQL for Supabase migration:
+
+TABLE users
+- id uuid primary key
+- email text
+- created_at timestamp default now()
+
+TABLE user_profiles
+- id uuid primary key
+- user_id uuid references users(id)
+- age int
+- height int
+- weight float
+- goal_type text
+- focus_track text
+- experience_level text
+- diet_preference text
+- equipment_access text
+- weekly_availability int
+- created_at timestamp default now()
+
+TABLE weekly_plans
+- id uuid primary key
+- user_id uuid
+- week_number int
+- calorie_target int
+- workout_json jsonb
+- created_at timestamp default now()
+
+TABLE weekly_checkins
+- id uuid primary key
+- user_id uuid
+- week_number int
+- weight float
+- adherence_percent int
+- energy_level text
+- waist_measurement float
+- created_at timestamp default now()
+
+TABLE calorie_logs
+- id uuid primary key
+- user_id uuid
+- date date
+- food_name text
+- calories int
+- source text
+- created_at timestamp default now()
+
+Enable Row Level Security on all tables.
+
+Policies:
+Users can only read/write their own rows.
+
+---
+
+STEP 5 — Express Server
+
+Create:
+
+/server.js
+
+Set up:
+
+- Express app
+- CORS
+- Helmet security
+- JSON body parsing
+- Error middleware
+
+---
+
+STEP 6 — Auth Middleware
+
+Create middleware that:
+
+- Reads Supabase JWT
+- Validates user session
+- Attaches user_id to request
+- Rejects unauthorized access
+
+---
+
+STEP 7 — API Routes
+
+Create REST endpoints:
+
+POST /profile/create
+GET /profile
+POST /weekly-checkin
+GET /weekly-plan
+POST /calorie-log
+GET /calorie-log/daily
+
+Each endpoint:
+
+- Requires auth
+- Validates inputs
+- Uses Supabase queries
+- Returns structured JSON
+
+---
+
+STEP 8 — Validation Rules
+
+Enforce:
+
+- weight > 0
+- calories >= 0
+- adherence 0–100
+- goal_type enum
+- focus_track enum
+
+Return clean error messages.
+
+---
+
+STEP 9 — Folder Structure
+
+Organize code:
+
+/config
+/routes
+/middleware
+/services
+/server.js
+
+Follow clean architecture.
+
+---
+
+STEP 10 — Output
+
+Provide:
+
+1. Full server code
+2. Supabase SQL migration
+3. .env template
+4. Setup instructions
+5. Example API requests
+
+Do not rewrite frontend.
+Focus only on backend integration.
+Production-ready code only.
