@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
-import { getSupabaseClient } from "../config/supabase";
+import { supabase, getSupabaseClient } from "../config/supabase";
 import { calculateMacros, type UserMacroInput } from "../utils/dietCalculator";
 import { generateDietPlan } from "../services/dietAI";
 import { adaptWeeklyDiet, type WeeklyProgress } from "../services/adaptation";
@@ -9,15 +9,28 @@ const router = Router();
 
 router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const db = req.supabaseClient || getSupabaseClient();
+    const userDb = req.supabaseClient || getSupabaseClient();
 
-    const { data: profile, error: profileError } = await db
+    let profile: any = null;
+
+    const { data: userProfile, error: userProfileError } = await userDb
       .from("user_profiles")
       .select("*")
       .eq("user_id", req.userId!)
       .single();
 
-    if (profileError || !profile) {
+    if (userProfile && !userProfileError) {
+      profile = userProfile;
+    } else {
+      const { data: adminProfile } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", req.userId!)
+        .single();
+      profile = adminProfile;
+    }
+
+    if (!profile) {
       return res.status(404).json({ error: "User profile not found. Complete onboarding first." });
     }
 
@@ -44,7 +57,7 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
       });
     }
 
-    const { data: latestPlan } = await db
+    const { data: latestPlan } = await userDb
       .from("diet_plans")
       .select("week_number")
       .eq("user_id", req.userId!)
@@ -54,7 +67,7 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
 
     const nextWeek = latestPlan ? latestPlan.week_number + 1 : 1;
 
-    const { data: existing } = await db
+    const { data: existing } = await userDb
       .from("diet_plans")
       .select("id")
       .eq("user_id", req.userId!)
@@ -63,7 +76,7 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
 
     let savedPlan;
     if (existing) {
-      const { data, error } = await db
+      const { data, error } = await userDb
         .from("diet_plans")
         .update({
           calorie_target: macros.calories,
@@ -78,7 +91,7 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
       if (error) return res.status(500).json({ error: error.message });
       savedPlan = data;
     } else {
-      const { data, error } = await db
+      const { data, error } = await userDb
         .from("diet_plans")
         .insert({
           user_id: req.userId!,
@@ -108,19 +121,30 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
 
 router.post("/adapt-week", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const db = req.supabaseClient || getSupabaseClient();
+    const userDb = req.supabaseClient || getSupabaseClient();
 
-    const { data: profile } = await db
+    let profile: any = null;
+    const { data: userProfile } = await userDb
       .from("user_profiles")
       .select("*")
       .eq("user_id", req.userId!)
       .single();
+    if (userProfile) {
+      profile = userProfile;
+    } else {
+      const { data: adminProfile } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", req.userId!)
+        .single();
+      profile = adminProfile;
+    }
 
     if (!profile) {
       return res.status(404).json({ error: "User profile not found" });
     }
 
-    const { data: currentPlan } = await db
+    const { data: currentPlan } = await userDb
       .from("diet_plans")
       .select("*")
       .eq("user_id", req.userId!)
@@ -132,7 +156,7 @@ router.post("/adapt-week", requireAuth, async (req: AuthenticatedRequest, res) =
       return res.status(404).json({ error: "No existing diet plan found. Generate one first." });
     }
 
-    const { data: checkins } = await db
+    const { data: checkins } = await userDb
       .from("weekly_checkins")
       .select("*")
       .eq("user_id", req.userId!)
@@ -142,7 +166,7 @@ router.post("/adapt-week", requireAuth, async (req: AuthenticatedRequest, res) =
     const currentWeight = checkins?.[0]?.weight || profile.weight || 70;
     const previousWeight = checkins?.[1]?.weight || profile.weight || 70;
 
-    const { data: logs } = await db
+    const { data: logs } = await userDb
       .from("calorie_logs")
       .select("calories")
       .eq("user_id", req.userId!);
@@ -181,7 +205,7 @@ router.post("/adapt-week", requireAuth, async (req: AuthenticatedRequest, res) =
 
     const newWeek = currentPlan.week_number + 1;
 
-    const { data: savedPlan, error } = await db
+    const { data: savedPlan, error } = await userDb
       .from("diet_plans")
       .insert({
         user_id: req.userId!,

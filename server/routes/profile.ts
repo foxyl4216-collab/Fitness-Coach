@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
-import { getSupabaseClient } from "../config/supabase";
+import { supabase, getSupabaseClient } from "../config/supabase";
 
 const router = Router();
 
@@ -45,16 +45,27 @@ router.post("/create", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: `equipment_access must be one of: ${VALID_EQUIPMENT_ACCESS.join(", ")}` });
     }
 
-    const db = req.supabaseClient || getSupabaseClient();
+    const userDb = req.supabaseClient || getSupabaseClient();
 
-    const { data: existing } = await db
+    let existing: any = null;
+    const { data: userExisting } = await userDb
       .from("user_profiles")
       .select("id")
       .eq("user_id", req.userId!)
       .single();
+    if (userExisting) {
+      existing = userExisting;
+    } else {
+      const { data: adminExisting } = await supabase
+        .from("user_profiles")
+        .select("id")
+        .eq("user_id", req.userId!)
+        .single();
+      existing = adminExisting;
+    }
 
     if (existing) {
-      const { data, error } = await db
+      const { data, error } = await supabase
         .from("user_profiles")
         .update({
           age, height, weight, goal_type, focus_track,
@@ -69,7 +80,7 @@ router.post("/create", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.json({ message: "Profile updated", profile: data });
     }
 
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from("user_profiles")
       .insert({
         user_id: req.userId!,
@@ -89,20 +100,30 @@ router.post("/create", requireAuth, async (req: AuthenticatedRequest, res) => {
 
 router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const db = req.supabaseClient || getSupabaseClient();
+    const userDb = req.supabaseClient || getSupabaseClient();
 
-    const { data, error } = await db
+    const { data, error } = await userDb
       .from("user_profiles")
       .select("*")
       .eq("user_id", req.userId!)
       .single();
 
-    if (error && error.code === "PGRST116") {
+    if (data && !error) {
+      return res.json({ profile: data });
+    }
+
+    const { data: adminData, error: adminError } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("user_id", req.userId!)
+      .single();
+
+    if (adminError && adminError.code === "PGRST116") {
       return res.status(404).json({ error: "Profile not found" });
     }
 
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ profile: data });
+    if (adminError) return res.status(500).json({ error: adminError.message });
+    return res.json({ profile: adminData });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Internal server error" });
   }

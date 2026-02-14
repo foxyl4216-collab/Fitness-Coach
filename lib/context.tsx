@@ -186,8 +186,8 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
     setIsOnboarded(true);
     setWeekNumber(1);
 
-    syncProfileToBackend(newProfile);
-    syncPlanToBackend(initialPlan);
+    await syncProfileToBackend(newProfile);
+    await syncPlanToBackend(initialPlan);
   };
 
   const addFoodEntry = async (entry: Omit<Storage.FoodEntry, 'id' | 'timestamp'>) => {
