@@ -1,0 +1,189 @@
+Extend the backend to support a personalized AI diet generator with weekly adaptation.
+
+Use Node.js + Express + Supabase + OpenAI GPT.
+
+Do NOT rebuild existing authentication.
+Add new logic only.
+
+This is a fitness coaching app.
+
+----------------------------------
+STEP 1 — Diet Calculation Engine
+----------------------------------
+
+Create a utility file:
+
+/utils/dietCalculator.js
+
+Function:
+
+calculateMacros(userProfile)
+
+Inputs:
+- weight (kg)
+- height
+- age
+- gender
+- goal_type ("fat_loss" or "muscle_gain")
+
+Logic:
+
+maintenance = weight * 30
+
+IF fat_loss:
+  calorie_target = maintenance * 0.8
+  protein = weight * 2.0
+  fat = weight * 0.8
+
+IF muscle_gain:
+  calorie_target = maintenance + 250
+  protein = weight * 2.2
+  fat = weight * 1.0
+
+Remaining calories → carbs
+
+Return structured object:
+
+{
+  calories,
+  protein,
+  carbs,
+  fat
+}
+
+----------------------------------
+STEP 2 — GPT Diet Generator
+----------------------------------
+
+Create:
+
+/services/dietAI.js
+
+Function:
+
+generateDietPlan(macros, preference, goal)
+
+Call OpenAI GPT.
+
+Use JSON-only output.
+
+Prompt must generate Indian realistic meals.
+
+Return parsed JSON.
+
+Add retry logic if JSON invalid.
+
+----------------------------------
+STEP 3 — Weekly Adaptation Logic
+----------------------------------
+
+Create:
+
+/services/adaptation.js
+
+Function:
+
+adaptWeeklyDiet(previousWeekData, progress)
+
+Inputs:
+- weekly weight change
+- calories consumed vs target
+- goal
+
+Rules:
+
+If fat_loss:
+  If weight not dropping → reduce calories by 5%
+  If dropping too fast → increase 5%
+
+If muscle_gain:
+  If no weight gain → add 150 calories
+  If gaining too fast → reduce 100 calories
+
+Recalculate macros.
+
+Return updated macro targets.
+
+----------------------------------
+STEP 4 — Diet Routes
+----------------------------------
+
+Create:
+
+/routes/diet.js
+
+Routes:
+
+POST /diet/generate
+Generate new diet for user
+
+POST /diet/adapt-week
+Adapt diet after progress update
+
+GET /diet/current
+Fetch latest plan
+
+Each route:
+
+1. Get user profile
+2. Calculate macros
+3. Call GPT generator
+4. Save to diet_plans table
+5. Return JSON
+
+----------------------------------
+STEP 5 — Database Integration
+----------------------------------
+
+Save fields:
+
+user_id
+week_number
+calorie_target
+protein_target
+diet_json
+created_at
+
+Increment week automatically.
+
+----------------------------------
+STEP 6 — Validation & Safety
+----------------------------------
+
+Before saving:
+
+- calories cannot be negative
+- protein >= 1.5g/kg
+- JSON must contain meals
+- total calories within 10% of target
+
+Reject invalid AI outputs.
+
+----------------------------------
+STEP 7 — Folder Structure
+----------------------------------
+
+/utils/dietCalculator.js
+/services/dietAI.js
+/services/adaptation.js
+/routes/diet.js
+/server.js
+
+Keep modular.
+
+----------------------------------
+STEP 8 — Output Required
+----------------------------------
+
+Provide:
+
+1. Full working code
+2. GPT integration
+3. Supabase queries
+4. Error handling
+5. Example API requests
+6. Setup instructions
+
+Production-ready architecture.
+
+Do not modify frontend.
