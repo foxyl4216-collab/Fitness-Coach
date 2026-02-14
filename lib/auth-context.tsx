@@ -12,6 +12,7 @@ const AUTH_KEYS = {
 interface AuthUser {
   id: string;
   email: string;
+  displayName?: string;
 }
 
 interface AuthContextValue {
@@ -23,6 +24,7 @@ interface AuthContextValue {
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   getToken: () => Promise<string | null>;
+  updateProfile: (updates: { displayName?: string; email?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -156,6 +158,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return getStoredToken();
   }, []);
 
+  const updateProfile = useCallback(async (updates: { displayName?: string; email?: string }) => {
+    if (!user) return;
+
+    const updatedUser = { ...user };
+
+    if (updates.displayName !== undefined) {
+      updatedUser.displayName = updates.displayName;
+    }
+
+    if (updates.email && updates.email !== user.email) {
+      const res = await apiRequest('POST', '/api/auth/update-email', { email: updates.email });
+      const data = await res.json();
+      if (data.user?.email) {
+        updatedUser.email = data.user.email;
+      }
+    }
+
+    setUser(updatedUser);
+    await AsyncStorage.setItem(AUTH_KEYS.USER, JSON.stringify(updatedUser));
+  }, [user]);
+
   const value = useMemo(() => ({
     user,
     accessToken,
@@ -165,7 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signup,
     logout,
     getToken,
-  }), [user, accessToken, isLoading, login, signup, logout, getToken]);
+    updateProfile,
+  }), [user, accessToken, isLoading, login, signup, logout, getToken, updateProfile]);
 
   return (
     <AuthContext.Provider value={value}>

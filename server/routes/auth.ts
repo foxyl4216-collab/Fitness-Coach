@@ -108,6 +108,37 @@ router.get("/session", requireAuth, async (req: AuthenticatedRequest, res) => {
   });
 });
 
+router.post("/update-email", requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    const { data, error } = await supabase.auth.admin.updateUserById(req.userId!, {
+      email,
+    });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    return res.json({
+      message: "Email updated successfully",
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+      },
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Internal server error" });
+  }
+});
+
 router.post("/refresh", async (req, res) => {
   try {
     const { refresh_token } = req.body;
