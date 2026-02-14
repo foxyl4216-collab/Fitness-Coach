@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
-import { supabase } from "../config/supabase";
+import { getSupabaseClient } from "../config/supabase";
 
 const router = Router();
 
@@ -12,6 +12,10 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: "Missing required fields: date, food_name" });
     }
 
+    if (!food_name.trim()) {
+      return res.status(400).json({ error: "food_name cannot be empty" });
+    }
+
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
       return res.status(400).json({ error: "Date must be in YYYY-MM-DD format" });
@@ -21,7 +25,9 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: "Calories must be a non-negative number" });
     }
 
-    const { data, error } = await supabase
+    const db = req.supabaseClient || getSupabaseClient();
+
+    const { data, error } = await db
       .from("calorie_logs")
       .insert({
         user_id: req.userId!,
@@ -40,6 +46,87 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
+router.post("/manual", requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { date, food_name, calories } = req.body;
+
+    if (!food_name || !food_name.trim()) {
+      return res.status(400).json({ error: "food_name is required and cannot be empty" });
+    }
+
+    if (calories === undefined || typeof calories !== "number" || calories < 0) {
+      return res.status(400).json({ error: "calories must be a non-negative number" });
+    }
+
+    const logDate = date || new Date().toISOString().split("T")[0];
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(logDate)) {
+      return res.status(400).json({ error: "Date must be in YYYY-MM-DD format" });
+    }
+
+    const db = req.supabaseClient || getSupabaseClient();
+
+    const { data, error } = await db
+      .from("calorie_logs")
+      .insert({
+        user_id: req.userId!,
+        date: logDate,
+        food_name: food_name.trim(),
+        calories,
+        source: "manual",
+      })
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(201).json({ message: "Manual calorie log added", log: data });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Internal server error" });
+  }
+});
+
+router.post("/camera", requireAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { date, food_name, calories, confidence } = req.body;
+
+    if (!food_name || !food_name.trim()) {
+      return res.status(400).json({ error: "food_name is required and cannot be empty" });
+    }
+
+    if (calories === undefined || typeof calories !== "number" || calories < 0) {
+      return res.status(400).json({ error: "calories must be a non-negative number" });
+    }
+
+    const logDate = date || new Date().toISOString().split("T")[0];
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(logDate)) {
+      return res.status(400).json({ error: "Date must be in YYYY-MM-DD format" });
+    }
+
+    const db = req.supabaseClient || getSupabaseClient();
+
+    const { data, error } = await db
+      .from("calorie_logs")
+      .insert({
+        user_id: req.userId!,
+        date: logDate,
+        food_name: food_name.trim(),
+        calories,
+        source: "camera",
+        confidence: confidence || null,
+      })
+      .select()
+      .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(201).json({ message: "Camera calorie log added", log: data });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "Internal server error" });
+  }
+});
+
 router.get("/daily", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const date = req.query.date as string;
@@ -48,7 +135,14 @@ router.get("/daily", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: "Date query parameter is required (YYYY-MM-DD)" });
     }
 
-    const { data, error } = await supabase
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({ error: "Date must be in YYYY-MM-DD format" });
+    }
+
+    const db = req.supabaseClient || getSupabaseClient();
+
+    const { data, error } = await db
       .from("calorie_logs")
       .select("*")
       .eq("user_id", req.userId!)
@@ -62,6 +156,7 @@ router.get("/daily", requireAuth, async (req: AuthenticatedRequest, res) => {
     return res.json({
       date,
       total_calories: totalCalories,
+      entry_count: (data || []).length,
       entries: data,
     });
   } catch (err: any) {
@@ -72,8 +167,9 @@ router.get("/daily", requireAuth, async (req: AuthenticatedRequest, res) => {
 router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const { id } = req.params;
+    const db = req.supabaseClient || getSupabaseClient();
 
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("calorie_logs")
       .select("id")
       .eq("id", id)
@@ -84,7 +180,7 @@ router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(404).json({ error: "Calorie log not found" });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("calorie_logs")
       .delete()
       .eq("id", id)

@@ -16,6 +16,11 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -29,7 +34,13 @@ router.post("/signup", async (req, res) => {
         id: data.user?.id,
         email: data.user?.email,
       },
-      session: data.session,
+      session: data.session
+        ? {
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            expires_at: data.session.expires_at,
+          }
+        : null,
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Internal server error" });
@@ -80,6 +91,16 @@ router.post("/logout", requireAuth, async (req: AuthenticatedRequest, res) => {
 
 router.get("/me", requireAuth, async (req: AuthenticatedRequest, res) => {
   return res.json({
+    user: {
+      id: req.userId,
+      email: req.userEmail,
+    },
+  });
+});
+
+router.get("/session", requireAuth, async (req: AuthenticatedRequest, res) => {
+  return res.json({
+    authenticated: true,
     user: {
       id: req.userId,
       email: req.userEmail,

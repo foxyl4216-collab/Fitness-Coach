@@ -1,9 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
-import { supabase } from "../config/supabase";
+import { supabase, getSupabaseClient } from "../config/supabase";
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
   userEmail?: string;
+  supabaseClient?: ReturnType<typeof getSupabaseClient>;
 }
 
 export async function requireAuth(
@@ -28,6 +29,7 @@ export async function requireAuth(
 
     req.userId = data.user.id;
     req.userEmail = data.user.email;
+    req.supabaseClient = getSupabaseClient(token);
     next();
   } catch (err) {
     return res.status(401).json({ error: "Authentication failed" });

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
-import { supabase } from "../config/supabase";
+import { getSupabaseClient } from "../config/supabase";
 
 const router = Router();
 
@@ -32,7 +32,9 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: "waist_measurement must be a positive number" });
     }
 
-    const { data, error } = await supabase
+    const db = req.supabaseClient || getSupabaseClient();
+
+    const { data, error } = await db
       .from("weekly_checkins")
       .insert({
         user_id: req.userId!,
@@ -54,7 +56,9 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
 
 router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const { data, error } = await supabase
+    const db = req.supabaseClient || getSupabaseClient();
+
+    const { data, error } = await db
       .from("weekly_checkins")
       .select("*")
       .eq("user_id", req.userId!)
@@ -69,7 +73,9 @@ router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
 
 router.get("/latest", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const { data, error } = await supabase
+    const db = req.supabaseClient || getSupabaseClient();
+
+    const { data, error } = await db
       .from("weekly_checkins")
       .select("*")
       .eq("user_id", req.userId!)
