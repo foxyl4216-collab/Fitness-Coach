@@ -32,6 +32,7 @@ export default function OnboardingScreen() {
   const [weight, setWeight] = useState('70');
   const [experience, setExperience] = useState<'beginner' | 'some' | 'experienced'>('beginner');
   const [dietPref, setDietPref] = useState<'anything' | 'vegetarian' | 'vegan'>('anything');
+  const [cuisine, setCuisine] = useState<'indian' | 'american' | 'mediterranean' | 'asian' | 'mexican' | 'global'>('indian');
   const [equipment, setEquipment] = useState<'none' | 'basic' | 'full_gym'>('basic');
   const [daysPerWeek, setDaysPerWeek] = useState('4');
   const [injuries, setInjuries] = useState('');
@@ -69,6 +70,7 @@ export default function OnboardingScreen() {
         gender,
         experience,
         dietPreference: dietPref,
+        cuisine,
         equipment,
         daysPerWeek: parseInt(daysPerWeek, 10) || 4,
         injuries,
@@ -263,6 +265,18 @@ export default function OnboardingScreen() {
                 <SmallOption selected={dietPref === 'anything'} onPress={() => setDietPref('anything')} label="Non-veg" />
                 <SmallOption selected={dietPref === 'vegetarian'} onPress={() => setDietPref('vegetarian')} label="Vegetarian" />
                 <SmallOption selected={dietPref === 'vegan'} onPress={() => setDietPref('vegan')} label="Vegan" />
+              </View>
+
+              <Text style={styles.fieldLabel}>Cuisine Preference</Text>
+              <View style={styles.optionRow}>
+                <SmallOption selected={cuisine === 'indian'} onPress={() => setCuisine('indian')} label="Indian" />
+                <SmallOption selected={cuisine === 'american'} onPress={() => setCuisine('american')} label="American" />
+                <SmallOption selected={cuisine === 'mediterranean'} onPress={() => setCuisine('mediterranean')} label="Mediterranean" />
+              </View>
+              <View style={styles.optionRow}>
+                <SmallOption selected={cuisine === 'asian'} onPress={() => setCuisine('asian')} label="Asian" />
+                <SmallOption selected={cuisine === 'mexican'} onPress={() => setCuisine('mexican')} label="Mexican" />
+                <SmallOption selected={cuisine === 'global'} onPress={() => setCuisine('global')} label="Global Mix" />
               </View>
 
               <Text style={styles.fieldLabel}>Available Equipment</Text>

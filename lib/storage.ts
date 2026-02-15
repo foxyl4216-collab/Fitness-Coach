@@ -20,6 +20,7 @@ export interface UserProfile {
   gender: 'male' | 'female';
   experience: 'beginner' | 'some' | 'experienced';
   dietPreference: 'anything' | 'vegetarian' | 'vegan';
+  cuisine: 'indian' | 'american' | 'mediterranean' | 'asian' | 'mexican' | 'global';
   equipment: 'none' | 'basic' | 'full_gym';
   daysPerWeek: number;
   injuries: string;
