@@ -25,12 +25,25 @@ export interface GeneratedDietPlan {
   notes: string[];
 }
 
+const CUISINE_HINTS: Record<string, string> = {
+  indian: "Use common Indian foods (dal, roti, rice, paneer, chicken curry, eggs, curd, idli, dosa, oats, chapati, sabzi).",
+  american: "Use common American foods (grilled chicken, eggs, oatmeal, salad, turkey, brown rice, sweet potato, Greek yogurt, berries, nuts, steak, salmon).",
+  mediterranean: "Use Mediterranean foods (hummus, falafel, grilled fish, olive oil, whole grain pita, quinoa, Greek salad, lentil soup, tzatziki, feta cheese).",
+  asian: "Use common Asian foods (stir-fried tofu, rice, miso soup, edamame, steamed fish, noodles, bok choy, teriyaki chicken, sushi bowls, kimchi).",
+  mexican: "Use common Mexican foods (beans, rice, grilled chicken, avocado, tortillas, salsa, enchiladas, burrito bowls, corn, pico de gallo).",
+  global: "Use a diverse mix of global foods from various cuisines. Include dishes from different cultures for variety.",
+};
+
 export async function generateDietPlan(
   macros: MacroTargets,
   preference: string,
-  goal: string
+  goal: string,
+  cuisine?: string
 ): Promise<GeneratedDietPlan> {
-  const prompt = `Create an Indian daily meal plan. Target: ${macros.calories}kcal, ${macros.protein}g protein, ${macros.carbs}g carbs, ${macros.fat}g fat. Diet: ${preference || "standard"}. Goal: ${goal === "fat_loss" ? "Fat Loss" : "Muscle Gain"}. Include 5 meals using common Indian foods (dal, roti, rice, paneer, chicken, eggs, curd, oats). Return JSON: {"meals":[{"meal":"Name","time":"8:00 AM","foods":[{"name":"Food","quantity":"1 bowl","calories":250,"protein":10}],"total_calories":250,"total_protein":10}],"daily_totals":{"calories":${macros.calories},"protein":${macros.protein},"carbs":${macros.carbs},"fat":${macros.fat}},"notes":["tip1"]}`;
+  const cuisineKey = cuisine && CUISINE_HINTS[cuisine] ? cuisine : "indian";
+  const cuisineHint = CUISINE_HINTS[cuisineKey];
+
+  const prompt = `Create a daily meal plan. Target: ${macros.calories}kcal, ${macros.protein}g protein, ${macros.carbs}g carbs, ${macros.fat}g fat. Diet: ${preference || "standard"}. Goal: ${goal === "fat_loss" ? "Fat Loss" : "Muscle Gain"}. ${cuisineHint} Include 5 meals. Return JSON: {"meals":[{"meal":"Name","time":"8:00 AM","foods":[{"name":"Food","quantity":"1 bowl","calories":250,"protein":10}],"total_calories":250,"total_protein":10}],"daily_totals":{"calories":${macros.calories},"protein":${macros.protein},"carbs":${macros.carbs},"fat":${macros.fat}},"notes":["tip1"]}`;
 
   const maxRetries = 3;
   let lastError: Error | null = null;

@@ -61,7 +61,8 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
     const macros = calculateMacros(macroInput);
 
     const preference = profile.diet_preference || "standard";
-    const dietPlan = await generateDietPlan(macros, preference, goalType);
+    const cuisine = profile.cuisine || req.body.cuisine || "indian";
+    const dietPlan = await generateDietPlan(macros, preference, goalType, cuisine);
 
     const validationErrors = validateDietPlan(dietPlan, macros, macroInput.weight);
     if (validationErrors.length > 0) {
@@ -219,7 +220,8 @@ router.post("/adapt-week", requireAuth, async (req: AuthenticatedRequest, res) =
     const adaptation = adaptWeeklyDiet(currentMacros, progress);
 
     const preference = profile.diet_preference || "standard";
-    const newDietPlan = await generateDietPlan(adaptation.adjusted_macros, preference, goalType);
+    const cuisine = profile.cuisine || req.body.cuisine || "indian";
+    const newDietPlan = await generateDietPlan(adaptation.adjusted_macros, preference, goalType, cuisine);
 
     const validationErrors = validateDietPlan(newDietPlan, adaptation.adjusted_macros, currentWeight);
     if (validationErrors.length > 0) {

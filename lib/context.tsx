@@ -75,6 +75,7 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
               gender: 'male',
               experience: data.profile.experience_level || 'beginner',
               dietPreference: data.profile.diet_preference || 'anything',
+              cuisine: data.profile.cuisine || 'indian',
               equipment: data.profile.equipment_access || 'basic',
               daysPerWeek: data.profile.weekly_availability || 4,
               injuries: '',
@@ -275,10 +276,11 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
         age: profile.age,
         goal_type: profile.goal,
         diet_preference: profile.dietPreference,
+        cuisine: profile.cuisine || 'indian',
         focus_track: profile.focusTrack,
         experience_level: profile.experience,
       } : undefined;
-      const res = await apiRequest('POST', '/api/diet-plan/generate', { profile: profilePayload });
+      const res = await apiRequest('POST', '/api/diet-plan/generate', { profile: profilePayload, cuisine: profile?.cuisine || 'indian' });
       const data = await res.json();
       if (data.diet_plan) {
         const newDiet: Storage.DietPlan = {
