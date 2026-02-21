@@ -45,15 +45,23 @@ export async function apiRequest(
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(url.toString(), {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-  await throwIfResNotOk(res);
-  return res;
+  try {
+    const res = await fetch(url.toString(), {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+      signal: controller.signal,
+    });
+
+    await throwIfResNotOk(res);
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -65,17 +73,25 @@ export const getQueryFn: <T>(options: {
     const baseUrl = getApiUrl();
     const url = new URL(queryKey.join("/") as string, baseUrl);
 
-    const res = await fetch(url.toString(), {
-      credentials: "include",
-      headers: getAuthHeaders(),
-    });
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    try {
+      const res = await fetch(url.toString(), {
+        credentials: "include",
+        headers: getAuthHeaders(),
+        signal: controller.signal,
+      });
+
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    } finally {
+      clearTimeout(id);
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
