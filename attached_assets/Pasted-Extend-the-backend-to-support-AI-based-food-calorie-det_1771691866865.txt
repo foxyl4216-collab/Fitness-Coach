@@ -1,0 +1,182 @@
+Extend the backend to support AI-based food calorie detection from images.
+
+Tech stack:
+Node.js + Express + Supabase + OpenAI GPT-4 Vision
+
+Do NOT modify existing auth.
+Add new service only.
+
+-----------------------------------
+STEP 1 — Install Dependencies
+-----------------------------------
+
+Use:
+
+multer (image upload)
+openai
+sharp (optional image compression)
+uuid
+
+-----------------------------------
+STEP 2 — Create Upload Middleware
+-----------------------------------
+
+Create:
+
+/middleware/upload.js
+
+Use multer to:
+- Accept single image
+- Max size 5MB
+- Only allow jpeg/png
+- Store temporarily in memory
+
+-----------------------------------
+STEP 3 — Create AI Food Detection Service
+-----------------------------------
+
+Create:
+
+/services/foodVisionAI.js
+
+Function:
+
+analyzeFoodImage(imageBuffer)
+
+Call OpenAI GPT-4 Vision.
+
+System prompt:
+
+"You are a professional nutritionist.
+Analyze the food image and:
+1. Identify each food item
+2. Estimate portion size
+3. Estimate calories per item
+4. Return total estimated calories
+5. Provide confidence score (0-100)
+6. If unclear, respond 'low_confidence': true"
+
+Return STRICT JSON format:
+
+{
+  "items": [
+    {
+      "name": "",
+      "estimated_quantity": "",
+      "estimated_calories": number
+    }
+  ],
+  "total_estimated_calories": number,
+  "confidence_score": number,
+  "low_confidence": false
+}
+
+Reject non-JSON output.
+Retry if invalid.
+
+-----------------------------------
+STEP 4 — Validation Layer
+-----------------------------------
+
+Before saving:
+
+If:
+- total_estimated_calories <= 0
+- confidence_score < 60
+- low_confidence = true
+
+Return:
+
+{
+  success: false,
+  message: "Image unclear. Please retake photo."
+}
+
+Do NOT save bad data.
+
+-----------------------------------
+STEP 5 — Save to Supabase
+-----------------------------------
+
+Insert into:
+
+calorie_logs table
+
+Fields:
+
+user_id
+food_name = "AI Scan"
+calories = total_estimated_calories
+source = "camera"
+created_at
+
+Also store full JSON in a new column:
+
+analysis_json jsonb
+
+-----------------------------------
+STEP 6 — Create Route
+-----------------------------------
+
+Create:
+
+/routes/cameraCalories.js
+
+POST /calorie-log/camera
+
+Protected route.
+Flow:
+
+1. Validate user JWT
+2. Upload image
+3. Send to AI service
+4. Validate result
+5. Save to Supabase
+6. Return structured response
+
+-----------------------------------
+STEP 7 — Add Database Column
+-----------------------------------
+
+Add new column:
+
+alter table calorie_logs
+add column analysis_json jsonb;
+
+-----------------------------------
+STEP 8 — Error Handling
+-----------------------------------
+
+Handle:
+
+- No image
+- Wrong format
+- AI failure
+- Supabase failure
+
+Return clean JSON errors.
+
+-----------------------------------
+STEP 9 — Security
+-----------------------------------
+
+- Limit 10 scans per day per user
+- Use rate limiter middleware
+- Reject unauthenticated users
+
+-----------------------------------
+STEP 10 — Output Required
+-----------------------------------
+
+Provide:
+
+1. Full backend code
+2. GPT Vision API integration
+3. Supabase insert logic
+4. Middleware
+5. Setup instructions
+6. Example API call using Postman
+7. Environment variable setup
+
+Production-ready implementation.
+Do NOT modify frontend.
