@@ -1,0 +1,230 @@
+FIX the camera calorie upload feature. Do NOT rewrite existing code. ONLY patch missing or broken parts.
+
+---
+
+## ISSUE CONTEXT
+
+When uploading an image, nothing happens.
+
+This likely means:
+
+* Route not registered
+* Multer not working
+* Request not reaching controller
+* OpenAI call not triggered
+* No response sent
+
+---
+
+## PATCH 1 — Ensure Route is Registered
+
+In your main server file (app.js or index.js):
+
+ADD:
+
+const cameraCaloriesRoute = require("./routes/cameraCalories");
+app.use("/api", cameraCaloriesRoute);
+
+---
+
+## PATCH 2 — Fix Route Handler (CRITICAL)
+
+In /routes/cameraCalories.js:
+
+Ensure route looks EXACTLY like this:
+
+router.post(
+"/calorie-log/camera",
+authMiddleware,
+rateLimiter,
+upload.single("image"),
+async (req, res) => {
+try {
+console.log("📸 Route hit");
+
+```
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "No image uploaded"
+    });
+  }
+
+  const result = await analyzeFoodImage(req.file.buffer);
+
+  console.log("AI RESULT:", result);
+
+  if (
+    !result ||
+    result.total_estimated_calories <= 0 ||
+    result.confidence_score < 60 ||
+    result.low_confidence === true
+  ) {
+    return res.json({
+      success: false,
+      message: "Image unclear. Please retake photo."
+    });
+  }
+
+  const { data, error } = await supabase
+    .from("calorie_logs")
+    .insert([
+      {
+        user_id: req.user.id,
+        food_name: "AI Scan",
+        calories: result.total_estimated_calories,
+        source: "camera",
+        analysis_json: result,
+        created_at: new Date()
+      }
+    ]);
+
+  if (error) {
+    console.error("Supabase error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Database error"
+    });
+  }
+
+  return res.json({
+    success: true,
+    data: result
+  });
+
+} catch (err) {
+  console.error("Camera route error:", err);
+  return res.status(500).json({
+    success: false,
+    message: "Server error"
+  });
+}
+```
+
+}
+);
+
+---
+
+## PATCH 3 — Fix Multer Middleware
+
+In /middleware/upload.js:
+
+Ensure this EXACT config:
+
+const multer = require("multer");
+
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+if (
+file.mimetype === "image/jpeg" ||
+file.mimetype === "image/png" ||
+file.mimetype === "image/jpg"
+) {
+cb(null, true);
+} else {
+cb(new Error("Only JPG/PNG images allowed"), false);
+}
+};
+
+const upload = multer({
+storage,
+limits: { fileSize: 5 * 1024 * 1024 },
+fileFilter
+});
+
+module.exports = upload;
+
+---
+
+## PATCH 4 — Fix OpenAI Call (VERY COMMON BUG)
+
+In /services/foodVisionAI.js:
+
+Ensure you are using this format:
+
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+apiKey: process.env.OPENAI_API_KEY
+});
+
+async function analyzeFoodImage(imageBuffer) {
+const base64Image = imageBuffer.toString("base64");
+
+const response = await openai.chat.completions.create({
+model: "gpt-4o",
+messages: [
+{
+role: "system",
+content: "You are a professional nutritionist. Return ONLY JSON."
+},
+{
+role: "user",
+content: [
+{
+type: "text",
+text: "Analyze this food image and return calories in JSON format."
+},
+{
+type: "image_url",
+image_url: {
+url: `data:image/jpeg;base64,${base64Image}`
+}
+}
+]
+}
+],
+max_tokens: 500
+});
+
+const text = response.choices[0].message.content;
+
+try {
+return JSON.parse(text);
+} catch (e) {
+console.error("JSON parse failed:", text);
+throw new Error("Invalid AI response");
+}
+}
+
+module.exports = { analyzeFoodImage };
+
+---
+
+## PATCH 5 — DEBUG LOGS (IMPORTANT)
+
+Add logs:
+
+console.log("REQ FILE:", req.file);
+console.log("USER:", req.user);
+
+This helps identify where it breaks.
+
+---
+
+## PATCH 6 — FRONTEND CHECK (VERY IMPORTANT)
+
+Ensure request is sent as:
+
+Content-Type: multipart/form-data
+
+Field name MUST be:
+
+image
+
+---
+
+## EXPECTED RESULT
+
+When uploading image:
+
+* Console shows "📸 Route hit"
+* AI response logged
+* Data saved in Supabase
+* JSON returned
+
+If not, logs will show failure point.
+
+ONLY apply fixes. DO NOT rewrite project.

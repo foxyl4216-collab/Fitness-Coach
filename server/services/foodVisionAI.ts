@@ -19,15 +19,18 @@ export interface FoodAnalysisResult {
 }
 
 export async function analyzeFoodImage(imageBuffer: Buffer, mimeType: string = "image/jpeg"): Promise<FoodAnalysisResult> {
+  console.log("[foodVisionAI] Buffer size:", imageBuffer.length, "bytes");
+  
   const base64 = imageBuffer.toString("base64");
   const dataUrl = `data:${mimeType};base64,${base64}`;
 
+  console.log("[foodVisionAI] Calling OpenAI GPT-4o Vision...");
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
-        content: `You are a professional nutritionist. Analyze food images and return ONLY valid JSON with this exact structure: {"items":[{"name":"","estimated_quantity":"","estimated_calories":0}],"total_estimated_calories":0,"confidence_score":0,"low_confidence":false}. confidence_score is 0-100. Set low_confidence:true if image is unclear or not food.`,
+        content: `You are a professional nutritionist. Analyze food images and return ONLY valid JSON. Do not include markdown or any text outside the JSON. Return this exact structure: {"items":[{"name":"","estimated_quantity":"","estimated_calories":0}],"total_estimated_calories":0,"confidence_score":0,"low_confidence":false}. Set confidence_score 0-100 and low_confidence:true if unclear.`,
       },
       {
         role: "user",
@@ -38,7 +41,7 @@ export async function analyzeFoodImage(imageBuffer: Buffer, mimeType: string = "
           },
           {
             type: "text",
-            text: "Identify each food item, estimate portion size and calories. Return total_estimated_calories as sum of all items. Set confidence_score based on image clarity and food visibility (0-100).",
+            text: "Identify each food item, estimate portion size and calories per item. Return total_estimated_calories as the sum. Set confidence_score based on image clarity (0-100).",
           },
         ],
       },
@@ -48,14 +51,22 @@ export async function analyzeFoodImage(imageBuffer: Buffer, mimeType: string = "
   });
 
   const content = response.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("No response from AI vision service");
+  if (!content || content.trim().length === 0) {
+    throw new Error("Empty response from AI vision service");
   }
 
-  const result = JSON.parse(content) as FoodAnalysisResult;
+  console.log("[foodVisionAI] Raw AI response:", content);
+
+  let result: FoodAnalysisResult;
+  try {
+    result = JSON.parse(content) as FoodAnalysisResult;
+  } catch (e) {
+    console.error("[foodVisionAI] JSON parse error:", e);
+    throw new Error("AI response was not valid JSON");
+  }
 
   if (!result.items || !Array.isArray(result.items)) {
-    throw new Error("Invalid AI response format");
+    throw new Error("Invalid AI response format: missing items array");
   }
 
   // Ensure total is calculated if missing
@@ -66,5 +77,6 @@ export async function analyzeFoodImage(imageBuffer: Buffer, mimeType: string = "
     );
   }
 
+  console.log("[foodVisionAI] Parsed result:", JSON.stringify(result, null, 2));
   return result;
 }

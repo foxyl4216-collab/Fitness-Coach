@@ -132,12 +132,21 @@ router.post("/camera", requireAuth, async (req: AuthenticatedRequest, res) => {
 router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
   uploadImage(req as any, res as any, async (err) => {
     if (err) {
+      console.error("📸 Multer error:", err.message);
       return res.status(400).json({ error: err.message || "Image upload failed" });
     }
     try {
+      console.log("📸 Route hit: /api/calorie-log/scan");
+      
       const file = (req as any).file as Express.Multer.File | undefined;
+      console.log("📸 File received:", !!file, file?.originalname, file?.size);
+      console.log("📸 User:", req.userId);
+
       if (!file) {
-        return res.status(400).json({ error: "No image provided. Please include an image file." });
+        return res.status(400).json({ 
+          success: false,
+          error: "No image provided. Please include an image file." 
+        });
       }
 
       const db = req.supabaseClient || getSupabaseClient();
@@ -151,35 +160,54 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
         .eq("date", today)
         .eq("source", "camera");
 
+      console.log("📸 Today's scan count:", count);
       if ((count || 0) >= 10) {
-        return res.status(429).json({ error: "Daily scan limit reached (10 scans per day)." });
+        return res.status(429).json({ 
+          success: false,
+          error: "Daily scan limit reached (10 scans per day)." 
+        });
       }
 
       // Run AI food vision analysis
+      console.log("📸 Sending to AI vision service...");
       let analysis;
       try {
         analysis = await analyzeFoodImage(file.buffer, file.mimetype);
+        console.log("📸 AI RESULT:", JSON.stringify(analysis, null, 2));
       } catch (aiErr: any) {
-        return res.status(502).json({ error: `AI analysis failed: ${aiErr.message}` });
+        console.error("📸 AI analysis failed:", aiErr.message);
+        return res.status(502).json({ 
+          success: false,
+          error: `AI analysis failed: ${aiErr.message}` 
+        });
       }
 
       // Validate result quality
       if (
+        !analysis ||
         analysis.low_confidence ||
         analysis.confidence_score < 60 ||
+        !analysis.total_estimated_calories ||
         analysis.total_estimated_calories <= 0
       ) {
+        console.log("📸 Image quality check failed:", {
+          low_confidence: analysis?.low_confidence,
+          confidence: analysis?.confidence_score,
+          calories: analysis?.total_estimated_calories,
+        });
         return res.status(422).json({
           success: false,
           message: "Image unclear or not food. Please retake photo.",
-          confidence_score: analysis.confidence_score,
+          confidence_score: analysis?.confidence_score || 0,
         });
       }
 
       // Build food name summary from detected items
-      const foodName = analysis.items.length > 0
-        ? analysis.items.map((i) => i.name).join(", ").substring(0, 100)
+      const foodName = analysis.items?.length > 0
+        ? analysis.items.map((i: any) => i.name).join(", ").substring(0, 100)
         : "AI Scan";
+
+      console.log("📸 Saving to Supabase:", { foodName, calories: analysis.total_estimated_calories });
 
       // Save to Supabase — try with analysis_json, fall back without it
       let savedLog: any = null;
@@ -193,13 +221,14 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
           food_name: foodName,
           calories: Math.round(analysis.total_estimated_calories),
           source: "camera",
-          confidence: analysis.confidence_score / 100,
+          confidence: Math.min(1, analysis.confidence_score / 100),
           analysis_json: analysis,
         })
         .select()
         .single();
 
       if (errWithJson) {
+        console.warn("📸 Retrying without analysis_json column:", errWithJson.message);
         // analysis_json column may not exist yet — retry without it
         const { data: withoutJson, error: errWithoutJson } = await db
           .from("calorie_logs")
@@ -209,7 +238,7 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
             food_name: foodName,
             calories: Math.round(analysis.total_estimated_calories),
             source: "camera",
-            confidence: analysis.confidence_score / 100,
+            confidence: Math.min(1, analysis.confidence_score / 100),
           })
           .select()
           .single();
@@ -220,9 +249,14 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
       }
 
       if (insertError) {
-        return res.status(500).json({ error: insertError.message });
+        console.error("📸 Database error:", insertError.message);
+        return res.status(500).json({ 
+          success: false,
+          error: insertError.message 
+        });
       }
 
+      console.log("📸 Success! Log saved:", savedLog?.id);
       return res.status(201).json({
         success: true,
         message: "Food scanned and logged successfully",
@@ -234,7 +268,11 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
         },
       });
     } catch (err: any) {
-      return res.status(500).json({ error: err.message || "Internal server error" });
+      console.error("📸 Route error:", err);
+      return res.status(500).json({ 
+        success: false,
+        error: err.message || "Internal server error" 
+      });
     }
   });
 });
