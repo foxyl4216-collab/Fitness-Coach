@@ -129,24 +129,21 @@ router.post("/camera", requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-router.post(
-  "/scan",
-  requireAuth,
-  uploadImage,
-  async (req: AuthenticatedRequest, res) => {
+router.post("/scan", requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       console.log("📸 Route hit: /api/calorie-log/scan");
-
-      const file = (req as any).file as Express.Multer.File | undefined;
-      console.log("📸 File received:", !!file, file?.originalname, file?.size);
-      console.log("📸 User:", req.userId);
-
-      if (!file) {
+      
+      const { image_base64, mime_type } = req.body;
+      
+      if (!image_base64) {
         return res.status(400).json({
           success: false,
-          error: "No image provided. Please include an image file.",
+          error: "No image provided. Please include image_base64 in request body.",
         });
       }
+
+      console.log("📸 Image received, size:", image_base64.length);
+      console.log("📸 User:", req.userId);
 
       const db = req.supabaseClient || getSupabaseClient();
       const today = new Date().toISOString().split("T")[0];
@@ -171,7 +168,9 @@ router.post(
       console.log("📸 Sending to AI vision service...");
       let analysis;
       try {
-        analysis = await analyzeFoodImage(file.buffer, file.mimetype);
+        const imageBuffer = Buffer.from(image_base64, "base64");
+        const mimeType = mime_type || "image/jpeg";
+        analysis = await analyzeFoodImage(imageBuffer, mimeType);
         console.log("📸 AI RESULT:", JSON.stringify(analysis, null, 2));
       } catch (aiErr: any) {
         console.error("📸 AI analysis failed:", aiErr.message);

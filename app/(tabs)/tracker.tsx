@@ -107,7 +107,6 @@ export default function TrackerScreen() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        // Fall back to image library if camera denied
         const libStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (libStatus.status !== 'granted') {
           Alert.alert('Permission needed', 'Camera or photo library access is required to scan food.');
@@ -119,25 +118,19 @@ export default function TrackerScreen() {
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.7,
-        base64: false,
+        base64: true,
       });
 
       if (result.canceled || !result.assets?.[0]) return;
 
       const asset = result.assets[0];
+      if (!asset.base64) {
+        Alert.alert('Error', 'Could not read image. Please try again.');
+        return;
+      }
+
       setIsScanning(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      // Create FormData properly for React Native
-      const formData = new FormData();
-      const mimeType = asset.mimeType || 'image/jpeg';
-      
-      // For React Native, use the proper Blob approach
-      formData.append('image', {
-        uri: asset.uri,
-        type: mimeType,
-        name: 'food.jpg',
-      } as any);
 
       const token = getStoredToken();
       const baseUrl = getApiUrl();
@@ -148,14 +141,17 @@ export default function TrackerScreen() {
 
       let response: Response;
       try {
-        console.log('[tracker] Sending scan request...');
+        console.log('[tracker] Sending food scan with base64 image...');
         response = await fetch(url, {
           method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            // Let the browser set Content-Type with boundary for multipart/form-data
           },
-          body: formData,
+          body: JSON.stringify({
+            image_base64: asset.base64,
+            mime_type: asset.mimeType || 'image/jpeg',
+          }),
           signal: controller.signal,
         });
       } finally {
