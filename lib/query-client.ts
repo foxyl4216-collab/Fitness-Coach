@@ -46,7 +46,7 @@ export async function apiRequest(
   }
 
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  const id = setTimeout(() => controller.abort(), 90000); // 90 second timeout for large image uploads
 
   try {
     const res = await fetch(url.toString(), {
@@ -74,7 +74,7 @@ export const getQueryFn: <T>(options: {
     const url = new URL(queryKey.join("/") as string, baseUrl);
 
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const id = setTimeout(() => controller.abort(), 90000); // 90 second timeout for large image uploads
 
     try {
       const res = await fetch(url.toString(), {

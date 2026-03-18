@@ -195,7 +195,7 @@ export default function TrackerScreen() {
       const url = new URL('/api/calorie-log/scan', baseUrl).toString();
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
+      const timeout = setTimeout(() => controller.abort(), 90000); // 90 second timeout for large image uploads
 
       let response: Response;
       try {
