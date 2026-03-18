@@ -128,10 +128,14 @@ export default function TrackerScreen() {
       setIsScanning(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+      // Create FormData properly for React Native
       const formData = new FormData();
+      const mimeType = asset.mimeType || 'image/jpeg';
+      
+      // For React Native, use the proper Blob approach
       formData.append('image', {
         uri: asset.uri,
-        type: asset.mimeType || 'image/jpeg',
+        type: mimeType,
         name: 'food.jpg',
       } as any);
 
@@ -144,10 +148,12 @@ export default function TrackerScreen() {
 
       let response: Response;
       try {
+        console.log('[tracker] Sending scan request...');
         response = await fetch(url, {
           method: 'POST',
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            // Let the browser set Content-Type with boundary for multipart/form-data
           },
           body: formData,
           signal: controller.signal,
@@ -156,7 +162,9 @@ export default function TrackerScreen() {
         clearTimeout(timeout);
       }
 
+      console.log('[tracker] Response status:', response.status);
       const data = await response.json();
+      console.log('[tracker] Response data:', data);
 
       if (!response.ok) {
         if (response.status === 422) {
@@ -171,22 +179,23 @@ export default function TrackerScreen() {
 
       const calories = data.analysis?.total_estimated_calories || 0;
       const foodLabel = data.log?.food_name || 'Scanned Food';
-      const confidence = data.analysis?.confidence_score || 0;
+      const confidence = Math.round(data.analysis?.confidence_score || 0);
 
       // Add to local food log
       await addFoodEntry({
         name: foodLabel,
-        calories,
+        calories: Math.round(calories),
         date: new Date().toISOString().split('T')[0],
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         'Food Logged!',
-        `${foodLabel}\n${calories} kcal detected (${confidence}% confidence)`,
+        `${foodLabel}\n${Math.round(calories)} kcal (${confidence}% confidence)`,
         [{ text: 'OK' }]
       );
     } catch (err: any) {
+      console.error('[tracker] Scan error:', err);
       if (err.name === 'AbortError') {
         Alert.alert('Timeout', 'Scan took too long. Please try again.');
       } else {

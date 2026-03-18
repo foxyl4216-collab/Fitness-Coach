@@ -129,23 +129,22 @@ router.post("/camera", requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
-  uploadImage(req as any, res as any, async (err) => {
-    if (err) {
-      console.error("📸 Multer error:", err.message);
-      return res.status(400).json({ error: err.message || "Image upload failed" });
-    }
+router.post(
+  "/scan",
+  requireAuth,
+  uploadImage,
+  async (req: AuthenticatedRequest, res) => {
     try {
       console.log("📸 Route hit: /api/calorie-log/scan");
-      
+
       const file = (req as any).file as Express.Multer.File | undefined;
       console.log("📸 File received:", !!file, file?.originalname, file?.size);
       console.log("📸 User:", req.userId);
 
       if (!file) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          error: "No image provided. Please include an image file." 
+          error: "No image provided. Please include an image file.",
         });
       }
 
@@ -162,9 +161,9 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
 
       console.log("📸 Today's scan count:", count);
       if ((count || 0) >= 10) {
-        return res.status(429).json({ 
+        return res.status(429).json({
           success: false,
-          error: "Daily scan limit reached (10 scans per day)." 
+          error: "Daily scan limit reached (10 scans per day).",
         });
       }
 
@@ -176,9 +175,9 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
         console.log("📸 AI RESULT:", JSON.stringify(analysis, null, 2));
       } catch (aiErr: any) {
         console.error("📸 AI analysis failed:", aiErr.message);
-        return res.status(502).json({ 
+        return res.status(502).json({
           success: false,
-          error: `AI analysis failed: ${aiErr.message}` 
+          error: `AI analysis failed: ${aiErr.message}`,
         });
       }
 
@@ -207,7 +206,10 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
         ? analysis.items.map((i: any) => i.name).join(", ").substring(0, 100)
         : "AI Scan";
 
-      console.log("📸 Saving to Supabase:", { foodName, calories: analysis.total_estimated_calories });
+      console.log("📸 Saving to Supabase:", {
+        foodName,
+        calories: analysis.total_estimated_calories,
+      });
 
       // Save to Supabase — try with analysis_json, fall back without it
       let savedLog: any = null;
@@ -228,7 +230,10 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
         .single();
 
       if (errWithJson) {
-        console.warn("📸 Retrying without analysis_json column:", errWithJson.message);
+        console.warn(
+          "📸 Retrying without analysis_json column:",
+          errWithJson.message
+        );
         // analysis_json column may not exist yet — retry without it
         const { data: withoutJson, error: errWithoutJson } = await db
           .from("calorie_logs")
@@ -250,9 +255,9 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
 
       if (insertError) {
         console.error("📸 Database error:", insertError.message);
-        return res.status(500).json({ 
+        return res.status(500).json({
           success: false,
-          error: insertError.message 
+          error: insertError.message,
         });
       }
 
@@ -263,19 +268,21 @@ router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
         log: savedLog,
         analysis: {
           items: analysis.items,
-          total_estimated_calories: Math.round(analysis.total_estimated_calories),
+          total_estimated_calories: Math.round(
+            analysis.total_estimated_calories
+          ),
           confidence_score: analysis.confidence_score,
         },
       });
     } catch (err: any) {
       console.error("📸 Route error:", err);
-      return res.status(500).json({ 
+      return res.status(500).json({
         success: false,
-        error: err.message || "Internal server error" 
+        error: err.message || "Internal server error",
       });
     }
-  });
-});
+  }
+);
 
 router.get("/daily", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
