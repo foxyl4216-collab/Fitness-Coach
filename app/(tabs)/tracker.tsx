@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,12 +16,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import { fetch } from 'expo/fetch';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import { getApiUrl } from '@/lib/query-client';
 import { getStoredToken } from '@/lib/auth-token';
+
+// Only import camera on native platforms
+let CameraView: any = null;
+let useCameraPermissions: any = null;
+if (Platform.OS !== 'web') {
+  const cameraModule = require('expo-camera');
+  CameraView = cameraModule.CameraView;
+  useCameraPermissions = cameraModule.useCameraPermissions;
+}
 
 export default function TrackerScreen() {
   const insets = useSafeAreaInsets();
@@ -33,8 +41,12 @@ export default function TrackerScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<any>(null);
+  
+  // Only on native platforms
+  const [cameraPermission, requestCameraPermission] = Platform.OS !== 'web' 
+    ? useCameraPermissions() 
+    : [{ granted: false }, async () => ({ granted: false })];
 
   const todayFoods = useMemo(
     () => foodLog.filter(f => f.date === selectedDate).sort((a, b) => b.timestamp - a.timestamp),
@@ -464,52 +476,56 @@ export default function TrackerScreen() {
         </View>
       </Modal>
 
-      <Modal visible={showCamera} animationType="slide">
-        <View style={styles.cameraContainer}>
-          {cameraPermission?.granted ? (
-            <>
-              <CameraView
-                ref={cameraRef}
-                style={styles.camera}
-                facing="back"
-              />
-              <View style={[styles.cameraControls, { paddingBottom: insets.bottom + 16 }]}>
+      {Platform.OS !== 'web' && (
+        <Modal visible={showCamera} animationType="slide">
+          <View style={styles.cameraContainer}>
+            {cameraPermission?.granted ? (
+              <>
+                {CameraView && (
+                  <CameraView
+                    ref={cameraRef}
+                    style={styles.camera}
+                    facing="back"
+                  />
+                )}
+                <View style={[styles.cameraControls, { paddingBottom: insets.bottom + 16 }]}>
+                  <Pressable
+                    onPress={() => setShowCamera(false)}
+                    style={styles.cameraCancelBtn}
+                  >
+                    <Ionicons name="close" size={24} color={Colors.text} />
+                  </Pressable>
+                  <Pressable
+                    onPress={handleCapturePhoto}
+                    style={styles.cameraCaptureBtn}
+                    disabled={isScanning}
+                  >
+                    {isScanning ? (
+                      <ActivityIndicator size="large" color={Colors.background} />
+                    ) : (
+                      <View style={styles.cameraCaptureDot} />
+                    )}
+                  </Pressable>
+                  <View style={{ width: 56 }} />
+                </View>
+              </>
+            ) : (
+              <View style={styles.cameraPermissionError}>
+                <Text style={styles.cameraErrorText}>Camera permission is required</Text>
                 <Pressable
-                  onPress={() => setShowCamera(false)}
-                  style={styles.cameraCancelBtn}
+                  onPress={() => {
+                    requestCameraPermission();
+                    setShowCamera(false);
+                  }}
+                  style={styles.cameraRetryBtn}
                 >
-                  <Ionicons name="close" size={24} color={Colors.text} />
+                  <Text style={styles.cameraRetryText}>Grant Permission</Text>
                 </Pressable>
-                <Pressable
-                  onPress={handleCapturePhoto}
-                  style={styles.cameraCaptureBtn}
-                  disabled={isScanning}
-                >
-                  {isScanning ? (
-                    <ActivityIndicator size="large" color={Colors.background} />
-                  ) : (
-                    <View style={styles.cameraCaptureDot} />
-                  )}
-                </Pressable>
-                <View style={{ width: 56 }} />
               </View>
-            </>
-          ) : (
-            <View style={styles.cameraPermissionError}>
-              <Text style={styles.cameraErrorText}>Camera permission is required</Text>
-              <Pressable
-                onPress={() => {
-                  requestCameraPermission();
-                  setShowCamera(false);
-                }}
-                style={styles.cameraRetryBtn}
-              >
-                <Text style={styles.cameraRetryText}>Grant Permission</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-      </Modal>
+            )}
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
