@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
 import { getSupabaseClient } from "../config/supabase";
+import { uploadImage } from "../middleware/upload";
+import { analyzeFoodImage } from "../services/foodVisionAI";
 
 const router = Router();
 
@@ -125,6 +127,116 @@ router.post("/camera", requireAuth, async (req: AuthenticatedRequest, res) => {
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Internal server error" });
   }
+});
+
+router.post("/scan", requireAuth, (req: AuthenticatedRequest, res, next) => {
+  uploadImage(req as any, res as any, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || "Image upload failed" });
+    }
+    try {
+      const file = (req as any).file as Express.Multer.File | undefined;
+      if (!file) {
+        return res.status(400).json({ error: "No image provided. Please include an image file." });
+      }
+
+      const db = req.supabaseClient || getSupabaseClient();
+      const today = new Date().toISOString().split("T")[0];
+
+      // Rate limit: max 10 AI scans per day per user
+      const { count } = await db
+        .from("calorie_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", req.userId!)
+        .eq("date", today)
+        .eq("source", "camera");
+
+      if ((count || 0) >= 10) {
+        return res.status(429).json({ error: "Daily scan limit reached (10 scans per day)." });
+      }
+
+      // Run AI food vision analysis
+      let analysis;
+      try {
+        analysis = await analyzeFoodImage(file.buffer, file.mimetype);
+      } catch (aiErr: any) {
+        return res.status(502).json({ error: `AI analysis failed: ${aiErr.message}` });
+      }
+
+      // Validate result quality
+      if (
+        analysis.low_confidence ||
+        analysis.confidence_score < 60 ||
+        analysis.total_estimated_calories <= 0
+      ) {
+        return res.status(422).json({
+          success: false,
+          message: "Image unclear or not food. Please retake photo.",
+          confidence_score: analysis.confidence_score,
+        });
+      }
+
+      // Build food name summary from detected items
+      const foodName = analysis.items.length > 0
+        ? analysis.items.map((i) => i.name).join(", ").substring(0, 100)
+        : "AI Scan";
+
+      // Save to Supabase — try with analysis_json, fall back without it
+      let savedLog: any = null;
+      let insertError: any = null;
+
+      const { data: withJson, error: errWithJson } = await db
+        .from("calorie_logs")
+        .insert({
+          user_id: req.userId!,
+          date: today,
+          food_name: foodName,
+          calories: Math.round(analysis.total_estimated_calories),
+          source: "camera",
+          confidence: analysis.confidence_score / 100,
+          analysis_json: analysis,
+        })
+        .select()
+        .single();
+
+      if (errWithJson) {
+        // analysis_json column may not exist yet — retry without it
+        const { data: withoutJson, error: errWithoutJson } = await db
+          .from("calorie_logs")
+          .insert({
+            user_id: req.userId!,
+            date: today,
+            food_name: foodName,
+            calories: Math.round(analysis.total_estimated_calories),
+            source: "camera",
+            confidence: analysis.confidence_score / 100,
+          })
+          .select()
+          .single();
+        savedLog = withoutJson;
+        insertError = errWithoutJson;
+      } else {
+        savedLog = withJson;
+      }
+
+      if (insertError) {
+        return res.status(500).json({ error: insertError.message });
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Food scanned and logged successfully",
+        log: savedLog,
+        analysis: {
+          items: analysis.items,
+          total_estimated_calories: Math.round(analysis.total_estimated_calories),
+          confidence_score: analysis.confidence_score,
+        },
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || "Internal server error" });
+    }
+  });
 });
 
 router.get("/daily", requireAuth, async (req: AuthenticatedRequest, res) => {

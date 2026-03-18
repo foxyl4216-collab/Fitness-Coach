@@ -59,6 +59,7 @@ All data routes require `Authorization: Bearer <token>` header.
 - `POST /api/calorie-log` - Add calorie log entry (date, food_name, calories, source)
 - `POST /api/calorie-log/manual` - Manual food entry (food_name required, calories >= 0, date optional defaults to today)
 - `POST /api/calorie-log/camera` - Camera/AI estimated entry (food_name, calories, confidence, source auto-set to "camera")
+- `POST /api/calorie-log/scan` - **AI food image scan** (multipart/form-data with `image` field). Runs GPT-4o Vision, validates confidence ≥60%, saves with analysis_json. Rate limited: 10 scans/day per user.
 - `GET /api/calorie-log/daily?date=YYYY-MM-DD` - Get daily logs with total calories and entry count
 - `DELETE /api/calorie-log/:id` - Delete a calorie log entry
 

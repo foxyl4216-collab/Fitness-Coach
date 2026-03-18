@@ -61,8 +61,12 @@ CREATE TABLE IF NOT EXISTS calorie_logs (
   calories int DEFAULT 0 CHECK (calories >= 0),
   source text DEFAULT 'manual',
   confidence float,
+  analysis_json jsonb,
   created_at timestamptz DEFAULT now()
 );
+
+-- Add analysis_json column to existing tables (safe to run multiple times)
+ALTER TABLE calorie_logs ADD COLUMN IF NOT EXISTS analysis_json jsonb;
 
 -- Enable Row Level Security on all tables
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;

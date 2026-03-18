@@ -10,12 +10,17 @@ import {
   FlatList,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { fetch } from 'expo/fetch';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
+import { getApiUrl } from '@/lib/query-client';
+import { getStoredToken } from '@/lib/auth-token';
 
 export default function TrackerScreen() {
   const insets = useSafeAreaInsets();
@@ -25,6 +30,7 @@ export default function TrackerScreen() {
   const [foodCalories, setFoodCalories] = useState('');
   const [foodProtein, setFoodProtein] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isScanning, setIsScanning] = useState(false);
 
   const todayFoods = useMemo(
     () => foodLog.filter(f => f.date === selectedDate).sort((a, b) => b.timestamp - a.timestamp),
@@ -97,6 +103,100 @@ export default function TrackerScreen() {
     ]);
   };
 
+  const handleScanFood = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        // Fall back to image library if camera denied
+        const libStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (libStatus.status !== 'granted') {
+          Alert.alert('Permission needed', 'Camera or photo library access is required to scan food.');
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.7,
+        base64: false,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      setIsScanning(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      const formData = new FormData();
+      formData.append('image', {
+        uri: asset.uri,
+        type: asset.mimeType || 'image/jpeg',
+        name: 'food.jpg',
+      } as any);
+
+      const token = getStoredToken();
+      const baseUrl = getApiUrl();
+      const url = new URL('/api/calorie-log/scan', baseUrl).toString();
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 422) {
+          Alert.alert('Could not detect food', data.message || 'Please retake photo with better lighting.');
+        } else if (response.status === 429) {
+          Alert.alert('Limit reached', data.error || 'Daily scan limit reached.');
+        } else {
+          Alert.alert('Scan failed', data.error || 'Failed to analyze image. Please try again.');
+        }
+        return;
+      }
+
+      const calories = data.analysis?.total_estimated_calories || 0;
+      const foodLabel = data.log?.food_name || 'Scanned Food';
+      const confidence = data.analysis?.confidence_score || 0;
+
+      // Add to local food log
+      await addFoodEntry({
+        name: foodLabel,
+        calories,
+        date: new Date().toISOString().split('T')[0],
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Food Logged!',
+        `${foodLabel}\n${calories} kcal detected (${confidence}% confidence)`,
+        [{ text: 'OK' }]
+      );
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        Alert.alert('Timeout', 'Scan took too long. Please try again.');
+      } else {
+        Alert.alert('Error', err.message || 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const dateLabels = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -165,15 +265,28 @@ export default function TrackerScreen() {
 
       <View style={styles.listHeader}>
         <Text style={styles.listTitle}>Food Log</Text>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowAddModal(true);
-          }}
-          style={styles.addButton}
-        >
-          <Ionicons name="add" size={22} color={Colors.white} />
-        </Pressable>
+        <View style={styles.listActions}>
+          <Pressable
+            onPress={handleScanFood}
+            style={[styles.scanButton, isScanning && styles.scanButtonActive]}
+            disabled={isScanning}
+          >
+            {isScanning ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <Ionicons name="camera-outline" size={20} color={Colors.primary} />
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowAddModal(true);
+            }}
+            style={styles.addButton}
+          >
+            <Ionicons name="add" size={22} color={Colors.white} />
+          </Pressable>
+        </View>
       </View>
 
       <FlatList
@@ -407,6 +520,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
+  },
+  listActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scanButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scanButtonActive: {
+    opacity: 0.6,
   },
   addButton: {
     width: 36,
