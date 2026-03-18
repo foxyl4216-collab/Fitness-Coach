@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { fetch } from 'expo/fetch';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
@@ -32,6 +33,9 @@ export default function TrackerScreen() {
   const [foodProtein, setFoodProtein] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isScanning, setIsScanning] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const cameraRef = useRef<CameraView>(null);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
   const todayFoods = useMemo(
     () => foodLog.filter(f => f.date === selectedDate).sort((a, b) => b.timestamp - a.timestamp),
@@ -105,7 +109,48 @@ export default function TrackerScreen() {
   };
 
   const handleShowScanOptions = () => {
-    handlePickImage();
+    if (Platform.OS !== 'web') {
+      Alert.alert('Scan Food', 'Choose a method', [
+        {
+          text: 'Take Photo',
+          onPress: async () => {
+            const status = await requestCameraPermission();
+            if (status?.granted) {
+              setShowCamera(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            } else {
+              Alert.alert('Camera Permission', 'Camera access is required to take photos.');
+            }
+          },
+        },
+        {
+          text: 'Choose from Library',
+          onPress: () => handlePickImage(),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]);
+    } else {
+      handlePickImage();
+    }
+  };
+
+  const handleCapturePhoto = async () => {
+    if (!cameraRef.current) return;
+    try {
+      setIsScanning(true);
+      const photo = await cameraRef.current.takePictureAsync({ base64: true });
+      setShowCamera(false);
+      
+      if (photo?.base64) {
+        await processFoodImage(photo.base64, photo.mimeType || 'image/jpeg');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to capture photo. Please try again.');
+      setIsScanning(false);
+    }
   };
 
   const handlePickImage = async () => {
@@ -421,6 +466,37 @@ export default function TrackerScreen() {
         </View>
       </Modal>
 
+      {Platform.OS !== 'web' && (
+        <Modal visible={showCamera} animationType="slide">
+          <View style={styles.cameraContainer}>
+            <CameraView
+              ref={cameraRef}
+              style={styles.camera}
+              facing="back"
+            />
+            <View style={[styles.cameraControls, { paddingBottom: insets.bottom + 16 }]}>
+              <Pressable
+                onPress={() => setShowCamera(false)}
+                style={styles.cameraCancelBtn}
+              >
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </Pressable>
+              <Pressable
+                onPress={handleCapturePhoto}
+                style={styles.cameraCaptureBtn}
+                disabled={isScanning}
+              >
+                {isScanning ? (
+                  <ActivityIndicator size="large" color={Colors.background} />
+                ) : (
+                  <View style={styles.cameraCaptureDot} />
+                )}
+              </Pressable>
+              <View style={{ width: 56 }} />
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -730,5 +806,42 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.4,
+  },
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    backgroundColor: Colors.background,
+  },
+  cameraCancelBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraCaptureBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraCaptureDot: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.white,
   },
 });

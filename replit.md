@@ -103,7 +103,7 @@ All data routes require `Authorization: Bearer <token>` header.
 - `app/(tabs)/index.tsx` - Dashboard/home screen
 - `app/(tabs)/workouts.tsx` - Weekly workout list
 - `app/(tabs)/diet.tsx` - AI diet plan with expandable meal cards and macro targets
-- `app/(tabs)/tracker.tsx` - Calorie tracker with food logging, manual entry, camera photo library, and live camera capture
+- `app/(tabs)/tracker.tsx` - Calorie tracker with food logging, manual entry, photo library picker, and live camera capture (native only)
 - `app/(tabs)/progress.tsx` - Profile screen with user info, fitness details, progress history, and logout
 - `app/workout-detail.tsx` - Exercise detail view
 - `app/check-in.tsx` - Weekly check-in form
