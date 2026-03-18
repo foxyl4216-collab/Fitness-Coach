@@ -22,14 +22,6 @@ import { useFitCoach } from '@/lib/context';
 import { getApiUrl } from '@/lib/query-client';
 import { getStoredToken } from '@/lib/auth-token';
 
-// Only import camera on native platforms
-let CameraView: any = null;
-let useCameraPermissions: any = null;
-if (Platform.OS !== 'web') {
-  const cameraModule = require('expo-camera');
-  CameraView = cameraModule.CameraView;
-  useCameraPermissions = cameraModule.useCameraPermissions;
-}
 
 export default function TrackerScreen() {
   const insets = useSafeAreaInsets();
@@ -40,13 +32,6 @@ export default function TrackerScreen() {
   const [foodProtein, setFoodProtein] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isScanning, setIsScanning] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const cameraRef = useRef<any>(null);
-  
-  // Only on native platforms
-  const [cameraPermission, requestCameraPermission] = Platform.OS !== 'web' 
-    ? useCameraPermissions() 
-    : [{ granted: false }, async () => ({ granted: false })];
 
   const todayFoods = useMemo(
     () => foodLog.filter(f => f.date === selectedDate).sort((a, b) => b.timestamp - a.timestamp),
@@ -120,47 +105,7 @@ export default function TrackerScreen() {
   };
 
   const handleShowScanOptions = () => {
-    Alert.alert('Scan Food', 'Choose a method', [
-      {
-        text: 'Take Photo',
-        onPress: () => handleOpenCamera(),
-      },
-      {
-        text: 'Choose from Library',
-        onPress: () => handlePickImage(),
-      },
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-    ]);
-  };
-
-  const handleOpenCamera = async () => {
-    const status = await requestCameraPermission();
-    if (status?.granted) {
-      setShowCamera(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } else {
-      Alert.alert('Camera Permission', 'Camera access is required to take photos.');
-    }
-  };
-
-  const handleCapturePhoto = async () => {
-    if (!cameraRef.current) return;
-    try {
-      setIsScanning(true);
-      const photo = await cameraRef.current.takePictureAsync({ base64: true });
-      setShowCamera(false);
-      
-      if (photo?.base64) {
-        await processFoodImage(photo.base64, photo.mimeType || 'image/jpeg');
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to capture photo. Please try again.');
-    } finally {
-      setIsScanning(false);
-    }
+    handlePickImage();
   };
 
   const handlePickImage = async () => {
@@ -476,56 +421,6 @@ export default function TrackerScreen() {
         </View>
       </Modal>
 
-      {Platform.OS !== 'web' && (
-        <Modal visible={showCamera} animationType="slide">
-          <View style={styles.cameraContainer}>
-            {cameraPermission?.granted ? (
-              <>
-                {CameraView && (
-                  <CameraView
-                    ref={cameraRef}
-                    style={styles.camera}
-                    facing="back"
-                  />
-                )}
-                <View style={[styles.cameraControls, { paddingBottom: insets.bottom + 16 }]}>
-                  <Pressable
-                    onPress={() => setShowCamera(false)}
-                    style={styles.cameraCancelBtn}
-                  >
-                    <Ionicons name="close" size={24} color={Colors.text} />
-                  </Pressable>
-                  <Pressable
-                    onPress={handleCapturePhoto}
-                    style={styles.cameraCaptureBtn}
-                    disabled={isScanning}
-                  >
-                    {isScanning ? (
-                      <ActivityIndicator size="large" color={Colors.background} />
-                    ) : (
-                      <View style={styles.cameraCaptureDot} />
-                    )}
-                  </Pressable>
-                  <View style={{ width: 56 }} />
-                </View>
-              </>
-            ) : (
-              <View style={styles.cameraPermissionError}>
-                <Text style={styles.cameraErrorText}>Camera permission is required</Text>
-                <Pressable
-                  onPress={() => {
-                    requestCameraPermission();
-                    setShowCamera(false);
-                  }}
-                  style={styles.cameraRetryBtn}
-                >
-                  <Text style={styles.cameraRetryText}>Grant Permission</Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
-        </Modal>
-      )}
     </View>
   );
 }
@@ -835,64 +730,5 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.4,
-  },
-  cameraContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  camera: {
-    flex: 1,
-  },
-  cameraControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    backgroundColor: Colors.background,
-  },
-  cameraCancelBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraCaptureBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraCaptureDot: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.white,
-  },
-  cameraPermissionError: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-  },
-  cameraErrorText: {
-    fontSize: 16,
-    fontFamily: 'Rubik_500Medium',
-    color: Colors.text,
-  },
-  cameraRetryBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-  },
-  cameraRetryText: {
-    fontSize: 15,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.white,
   },
 });
