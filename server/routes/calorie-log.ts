@@ -220,7 +220,6 @@ router.post("/scan", requireAuth, async (req: AuthenticatedRequest, res) => {
           food_name: foodName,
           calories: Math.round(analysis.total_estimated_calories),
           source: "camera",
-          confidence: analysis.confidence_score / 100,
         })
         .select()
         .single();
