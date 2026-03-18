@@ -210,11 +210,9 @@ router.post("/scan", requireAuth, async (req: AuthenticatedRequest, res) => {
         calories: analysis.total_estimated_calories,
       });
 
-      // Save to Supabase — try with analysis_json, fall back without it
-      let savedLog: any = null;
-      let insertError: any = null;
-
-      const { data: withJson, error: errWithJson } = await db
+      // Save to Supabase
+      console.log("📸 Inserting into database...");
+      const { data, error } = await db
         .from("calorie_logs")
         .insert({
           user_id: req.userId!,
@@ -222,43 +220,20 @@ router.post("/scan", requireAuth, async (req: AuthenticatedRequest, res) => {
           food_name: foodName,
           calories: Math.round(analysis.total_estimated_calories),
           source: "camera",
-          confidence: Math.min(1, analysis.confidence_score / 100),
-          analysis_json: analysis,
+          confidence: analysis.confidence_score / 100,
         })
         .select()
         .single();
 
-      if (errWithJson) {
-        console.warn(
-          "📸 Retrying without analysis_json column:",
-          errWithJson.message
-        );
-        // analysis_json column may not exist yet — retry without it
-        const { data: withoutJson, error: errWithoutJson } = await db
-          .from("calorie_logs")
-          .insert({
-            user_id: req.userId!,
-            date: today,
-            food_name: foodName,
-            calories: Math.round(analysis.total_estimated_calories),
-            source: "camera",
-            confidence: Math.min(1, analysis.confidence_score / 100),
-          })
-          .select()
-          .single();
-        savedLog = withoutJson;
-        insertError = errWithoutJson;
-      } else {
-        savedLog = withJson;
-      }
-
-      if (insertError) {
-        console.error("📸 Database error:", insertError.message);
+      if (error) {
+        console.error("📸 Database error:", error.message);
         return res.status(500).json({
           success: false,
-          error: insertError.message,
+          error: error.message,
         });
       }
+
+      const savedLog = data;
 
       console.log("📸 Success! Log saved:", savedLog?.id);
       return res.status(201).json({
