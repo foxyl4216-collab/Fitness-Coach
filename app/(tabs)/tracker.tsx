@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { fetch } from 'expo/fetch';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
@@ -31,6 +32,9 @@ export default function TrackerScreen() {
   const [foodProtein, setFoodProtein] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isScanning, setIsScanning] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
 
   const todayFoods = useMemo(
     () => foodLog.filter(f => f.date === selectedDate).sort((a, b) => b.timestamp - a.timestamp),
@@ -103,15 +107,56 @@ export default function TrackerScreen() {
     ]);
   };
 
-  const handleScanFood = async () => {
+  const handleShowScanOptions = () => {
+    Alert.alert('Scan Food', 'Choose a method', [
+      {
+        text: 'Take Photo',
+        onPress: () => handleOpenCamera(),
+      },
+      {
+        text: 'Choose from Library',
+        onPress: () => handlePickImage(),
+      },
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+    ]);
+  };
+
+  const handleOpenCamera = async () => {
+    const status = await requestCameraPermission();
+    if (status?.granted) {
+      setShowCamera(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
+      Alert.alert('Camera Permission', 'Camera access is required to take photos.');
+    }
+  };
+
+  const handleCapturePhoto = async () => {
+    if (!cameraRef.current) return;
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        const libStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (libStatus.status !== 'granted') {
-          Alert.alert('Permission needed', 'Camera or photo library access is required to scan food.');
-          return;
-        }
+      setIsScanning(true);
+      const photo = await cameraRef.current.takePictureAsync({ base64: true });
+      setShowCamera(false);
+      
+      if (photo?.base64) {
+        await processFoodImage(photo.base64, photo.mimeType || 'image/jpeg');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to capture photo. Please try again.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const libStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (libStatus.status !== 'granted') {
+        Alert.alert('Permission needed', 'Photo library access is required.');
+        return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -132,6 +177,17 @@ export default function TrackerScreen() {
       setIsScanning(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+      await processFoodImage(asset.base64, asset.mimeType || 'image/jpeg');
+    } catch (err: any) {
+      console.error('[tracker] Image picker error:', err);
+      Alert.alert('Error', err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const processFoodImage = async (base64: string, mimeType: string) => {
+    try {
       const token = getStoredToken();
       const baseUrl = getApiUrl();
       const url = new URL('/api/calorie-log/scan', baseUrl).toString();
@@ -141,7 +197,7 @@ export default function TrackerScreen() {
 
       let response: Response;
       try {
-        console.log('[tracker] Sending food scan with base64 image...');
+        console.log('[tracker] Sending food scan...');
         response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -149,8 +205,8 @@ export default function TrackerScreen() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
-            image_base64: asset.base64,
-            mime_type: asset.mimeType || 'image/jpeg',
+            image_base64: base64,
+            mime_type: mimeType,
           }),
           signal: controller.signal,
         });
@@ -191,14 +247,12 @@ export default function TrackerScreen() {
         [{ text: 'OK' }]
       );
     } catch (err: any) {
-      console.error('[tracker] Scan error:', err);
+      console.error('[tracker] Image processing error:', err);
       if (err.name === 'AbortError') {
         Alert.alert('Timeout', 'Scan took too long. Please try again.');
       } else {
         Alert.alert('Error', err.message || 'Something went wrong. Please try again.');
       }
-    } finally {
-      setIsScanning(false);
     }
   };
 
@@ -272,7 +326,7 @@ export default function TrackerScreen() {
         <Text style={styles.listTitle}>Food Log</Text>
         <View style={styles.listActions}>
           <Pressable
-            onPress={handleScanFood}
+            onPress={handleShowScanOptions}
             style={[styles.scanButton, isScanning && styles.scanButtonActive]}
             disabled={isScanning}
           >
@@ -407,6 +461,53 @@ export default function TrackerScreen() {
               </Pressable>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showCamera} animationType="slide">
+        <View style={styles.cameraContainer}>
+          {cameraPermission?.granted ? (
+            <>
+              <CameraView
+                ref={cameraRef}
+                style={styles.camera}
+                facing="back"
+              />
+              <View style={[styles.cameraControls, { paddingBottom: insets.bottom + 16 }]}>
+                <Pressable
+                  onPress={() => setShowCamera(false)}
+                  style={styles.cameraCancelBtn}
+                >
+                  <Ionicons name="close" size={24} color={Colors.text} />
+                </Pressable>
+                <Pressable
+                  onPress={handleCapturePhoto}
+                  style={styles.cameraCaptureBtn}
+                  disabled={isScanning}
+                >
+                  {isScanning ? (
+                    <ActivityIndicator size="large" color={Colors.background} />
+                  ) : (
+                    <View style={styles.cameraCaptureDot} />
+                  )}
+                </Pressable>
+                <View style={{ width: 56 }} />
+              </View>
+            </>
+          ) : (
+            <View style={styles.cameraPermissionError}>
+              <Text style={styles.cameraErrorText}>Camera permission is required</Text>
+              <Pressable
+                onPress={() => {
+                  requestCameraPermission();
+                  setShowCamera(false);
+                }}
+                style={styles.cameraRetryBtn}
+              >
+                <Text style={styles.cameraRetryText}>Grant Permission</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
       </Modal>
     </View>
@@ -718,5 +819,64 @@ const styles = StyleSheet.create({
   },
   btnDisabled: {
     opacity: 0.4,
+  },
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    backgroundColor: Colors.background,
+  },
+  cameraCancelBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraCaptureBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraCaptureDot: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.white,
+  },
+  cameraPermissionError: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
+  },
+  cameraErrorText: {
+    fontSize: 16,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.text,
+  },
+  cameraRetryBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+  },
+  cameraRetryText: {
+    fontSize: 15,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.white,
   },
 });
