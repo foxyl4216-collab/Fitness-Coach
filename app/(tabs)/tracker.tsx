@@ -364,19 +364,27 @@ export default function TrackerScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable
-            onLongPress={() => handleDelete(item.id)}
-            style={styles.foodItem}
-          >
-            <View style={styles.foodDot} />
-            <View style={styles.foodInfo}>
-              <Text style={styles.foodName}>{item.name}</Text>
-              {item.protein ? (
-                <Text style={styles.foodProtein}>{item.protein}g protein</Text>
-              ) : null}
-            </View>
-            <Text style={styles.foodCal}>{item.calories} kcal</Text>
-          </Pressable>
+          <View style={styles.foodItemContainer}>
+            <Pressable
+              onLongPress={() => handleDelete(item.id)}
+              style={styles.foodItem}
+            >
+              <View style={styles.foodDot} />
+              <View style={styles.foodInfo}>
+                <Text style={styles.foodName}>{item.name}</Text>
+                {item.protein ? (
+                  <Text style={styles.foodProtein}>{item.protein}g protein</Text>
+                ) : null}
+              </View>
+              <Text style={styles.foodCal}>{item.calories} kcal</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleDelete(item.id)}
+              style={styles.deleteButton}
+            >
+              <Ionicons name="trash-outline" size={20} color={Colors.error} />
+            </Pressable>
+          </View>
         )}
       />
 
@@ -655,13 +663,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
+  foodItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   foodItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   foodDot: {
     width: 8,
@@ -688,6 +701,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.primaryLight,
+  },
+  deleteButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
