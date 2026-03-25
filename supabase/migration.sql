@@ -186,9 +186,14 @@ BEGIN
   VALUES (new.id)
   ON CONFLICT (user_id) DO NOTHING;
 
-  INSERT INTO public.subscriptions (user_id, plan_type, status)
-  VALUES (new.id, 'free', 'active')
-  ON CONFLICT (user_id) DO NOTHING;
+  BEGIN
+    INSERT INTO public.subscriptions (user_id, plan_type, status)
+    VALUES (new.id, 'free', 'active')
+    ON CONFLICT (user_id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    -- Silently ignore subscription creation errors
+    NULL;
+  END;
 
   RETURN new;
 END;
