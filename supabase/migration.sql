@@ -178,22 +178,13 @@ CREATE POLICY "Users can update own subscription"
 
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 
--- Auto-create user profile AND free subscription on signup via trigger
+-- Auto-create user profile on signup via trigger (subscription created by backend)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.user_profiles (user_id)
   VALUES (new.id)
   ON CONFLICT (user_id) DO NOTHING;
-
-  BEGIN
-    INSERT INTO public.subscriptions (user_id, plan_type, status)
-    VALUES (new.id, 'free', 'active')
-    ON CONFLICT (user_id) DO NOTHING;
-  EXCEPTION WHEN OTHERS THEN
-    -- Silently ignore subscription creation errors
-    NULL;
-  END;
 
   RETURN new;
 END;

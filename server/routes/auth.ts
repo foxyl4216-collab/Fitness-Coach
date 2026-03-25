@@ -28,6 +28,23 @@ router.post("/signup", async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
 
+    // Create free subscription for new user (non-blocking)
+    if (data.user?.id) {
+      try {
+        await supabase
+          .from("subscriptions")
+          .insert({
+            user_id: data.user.id,
+            plan_type: "free",
+            status: "active",
+          })
+          .select()
+          .single();
+      } catch {
+        // Subscription creation is non-critical — user signup succeeds regardless
+      }
+    }
+
     return res.status(201).json({
       message: "User created successfully",
       user: {
