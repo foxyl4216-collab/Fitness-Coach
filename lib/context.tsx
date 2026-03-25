@@ -140,15 +140,22 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
   const syncProfileToBackend = async (prof: Storage.UserProfile) => {
     if (!isAuthenticated) return;
     try {
-      const goalMap: Record<string, string> = {
-        fat_loss: 'fat_loss',
-        muscle_gain: 'muscle_gain',
-      };
+      let goal_type = 'fat_loss';
+      
+      // Map frontend goal + focusTrack to backend goal_type
+      if (prof.focusTrack === 'belly_fat') {
+        goal_type = 'reduce_belly_fat';
+      } else if (prof.focusTrack === 'glute_gain') {
+        goal_type = 'glute_growth';
+      } else if (prof.goal === 'muscle_gain') {
+        goal_type = 'muscle_gain';
+      }
+
       await apiRequest('POST', '/api/profile/create', {
         age: prof.age,
         height: prof.heightCm,
         weight: prof.weightKg,
-        goal_type: goalMap[prof.goal] || 'fat_loss',
+        goal_type,
         focus_track: prof.focusTrack,
         experience_level: prof.experience,
         diet_preference: prof.dietPreference === 'anything' ? 'standard' : prof.dietPreference,
