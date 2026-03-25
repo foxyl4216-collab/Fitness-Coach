@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
+import { useSubscription } from '@/lib/subscription-context';
 import type { UserProfile } from '@/lib/storage';
 
 type Step = 'goal' | 'details' | 'lifestyle';
@@ -23,6 +24,7 @@ type Step = 'goal' | 'details' | 'lifestyle';
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { setOnboarded } = useFitCoach();
+  const { isPremium } = useSubscription();
   const [step, setStep] = useState<Step>('goal');
   const [goal, setGoal] = useState<'fat_loss' | 'muscle_gain'>('fat_loss');
   const [focusTrack, setFocusTrack] = useState<'none' | 'belly_fat' | 'glute_gain'>('none');
@@ -176,20 +178,31 @@ export default function OnboardingScreen() {
                 title="Muscle Gain"
                 subtitle="Build lean muscle with progressive overload and a calorie surplus"
               />
-              <OptionCard
-                selected={focusTrack === 'belly_fat'}
-                onPress={() => { setGoal('fat_loss'); setFocusTrack('belly_fat'); }}
-                icon={<MaterialCommunityIcons name="stomach" size={24} color={focusTrack === 'belly_fat' ? Colors.primary : Colors.textMuted} />}
-                title="Reduce Belly Fat"
-                subtitle="Fat loss with extra core work and activity circuits"
-              />
-              <OptionCard
-                selected={focusTrack === 'glute_gain'}
-                onPress={() => { setGoal('muscle_gain'); setFocusTrack('glute_gain'); }}
-                icon={<MaterialCommunityIcons name="human-female-dance" size={24} color={focusTrack === 'glute_gain' ? Colors.primary : Colors.textMuted} />}
-                title="Glute Growth"
-                subtitle="Muscle gain with lower body emphasis and glute hypertrophy"
-              />
+              {isPremium && (
+                <>
+                  <OptionCard
+                    selected={focusTrack === 'belly_fat'}
+                    onPress={() => { setGoal('fat_loss'); setFocusTrack('belly_fat'); }}
+                    icon={<MaterialCommunityIcons name="stomach" size={24} color={focusTrack === 'belly_fat' ? Colors.primary : Colors.textMuted} />}
+                    title="Reduce Belly Fat"
+                    subtitle="Fat loss with extra core work and activity circuits"
+                  />
+                  <OptionCard
+                    selected={focusTrack === 'glute_gain'}
+                    onPress={() => { setGoal('muscle_gain'); setFocusTrack('glute_gain'); }}
+                    icon={<MaterialCommunityIcons name="human-female-dance" size={24} color={focusTrack === 'glute_gain' ? Colors.primary : Colors.textMuted} />}
+                    title="Glute Growth"
+                    subtitle="Muscle gain with lower body emphasis and glute hypertrophy"
+                  />
+                </>
+              )}
+              
+              {!isPremium && (
+                <View style={styles.premiumLock}>
+                  <Ionicons name="lock-closed" size={16} color={Colors.primary} />
+                  <Text style={styles.premiumLockText}>Premium goals: Reduce Belly Fat, Glute Growth</Text>
+                </View>
+              )}
 
               {focusTrack === 'belly_fat' && (
                 <View style={styles.disclaimer}>
@@ -538,5 +551,22 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.white,
+  },
+  premiumLock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
+  },
+  premiumLockText: {
+    fontSize: 13,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.textSecondary,
+    flex: 1,
   },
 });
