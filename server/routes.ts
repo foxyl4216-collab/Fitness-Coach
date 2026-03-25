@@ -6,6 +6,7 @@ import weeklyPlanRoutes from "./routes/weekly-plan";
 import checkinRoutes from "./routes/checkin";
 import calorieLogRoutes from "./routes/calorie-log";
 import dietRoutes from "./routes/diet";
+import subscriptionRoutes from "./routes/subscription";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/auth", authRoutes);
@@ -14,6 +15,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/weekly-checkin", checkinRoutes);
   app.use("/api/calorie-log", calorieLogRoutes);
   app.use("/api/diet-plan", dietRoutes);
+  app.use("/api/subscription", subscriptionRoutes);
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });

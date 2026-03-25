@@ -13,8 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
+import { useSubscription } from '@/lib/subscription-context';
 
 interface MealCardProps {
   meal: {
@@ -98,10 +100,15 @@ function MealCard({ meal, index }: MealCardProps) {
 export default function DietScreen() {
   const insets = useSafeAreaInsets();
   const { dietPlan, dietLoading, generateDietPlan, profile, isOnboarded } = useFitCoach();
+  const { isPremium, isLoading: subLoading } = useSubscription();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
+    if (!isPremium) {
+      router.push('/upgrade');
+      return;
+    }
     setError(null);
     setGenerating(true);
     try {
@@ -160,13 +167,26 @@ export default function DietScreen() {
             <ActivityIndicator size="small" color={Colors.black} />
           ) : (
             <Ionicons
-              name={dietPlan ? 'refresh' : 'sparkles'}
+              name={!isPremium ? 'lock-closed' : dietPlan ? 'refresh' : 'sparkles'}
               size={20}
               color={Colors.black}
             />
           )}
         </Pressable>
       </View>
+
+      {!isPremium && !subLoading && (
+        <Pressable onPress={() => router.push('/upgrade')} style={styles.premiumGate}>
+          <View style={styles.premiumGateLeft}>
+            <Ionicons name="flash" size={22} color="#FFD700" />
+            <View>
+              <Text style={styles.premiumGateTitle}>Premium Feature</Text>
+              <Text style={styles.premiumGateSub}>AI diet plans require a premium subscription</Text>
+            </View>
+          </View>
+          <Text style={styles.premiumGateCta}>Upgrade →</Text>
+        </Pressable>
+      )}
 
       {isWorking && !dietPlan && (
         <View style={styles.loadingContainer}>
@@ -574,5 +594,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
+  },
+  premiumGate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFD700' + '40',
+  },
+  premiumGateLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  premiumGateTitle: {
+    fontSize: 14,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.text,
+  },
+  premiumGateSub: {
+    fontSize: 12,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  premiumGateCta: {
+    fontSize: 13,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.primary,
+    marginLeft: 8,
   },
 });

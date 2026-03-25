@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
+import { checkSubscription, requirePremium } from "../middleware/checkSubscription";
 import { supabase, getSupabaseClient } from "../config/supabase";
 import { calculateMacros, type UserMacroInput } from "../utils/dietCalculator";
 import { generateDietPlan } from "../services/dietAI";
@@ -7,7 +8,7 @@ import { adaptWeeklyDiet, type WeeklyProgress } from "../services/adaptation";
 
 const router = Router();
 
-router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => {
+router.post("/generate", requireAuth, checkSubscription, requirePremium, async (req: AuthenticatedRequest, res) => {
   try {
     const userDb = req.supabaseClient || getSupabaseClient();
 
@@ -134,7 +135,7 @@ router.post("/generate", requireAuth, async (req: AuthenticatedRequest, res) => 
   }
 });
 
-router.post("/adapt-week", requireAuth, async (req: AuthenticatedRequest, res) => {
+router.post("/adapt-week", requireAuth, checkSubscription, requirePremium, async (req: AuthenticatedRequest, res) => {
   try {
     const userDb = req.supabaseClient || getSupabaseClient();
 

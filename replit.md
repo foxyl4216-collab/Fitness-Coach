@@ -113,6 +113,18 @@ All data routes require `Authorization: Bearer <token>` header.
 - `SUPABASE_ANON_KEY` - Supabase anon/public key (secret)
 - `SESSION_SECRET` - Session secret (secret)
 
+## Subscription System
+- `subscriptions` table in Supabase: `plan_type` (free/monthly/yearly), `status` (active/expired), `start_date`, `end_date`
+- DB trigger `handle_new_user` creates a free subscription on every signup
+- `server/middleware/checkSubscription.ts` — `checkSubscription` populates `req.subscription`, `requirePremium` blocks free users with 403
+- `server/routes/subscription.ts` — `GET /api/subscription/status`, `POST /api/subscription/subscribe`, `POST /api/subscription/cancel`
+- Protected routes: `POST /api/calorie-log/scan` (AI scan), `POST /api/diet-plan/generate`, `POST /api/diet-plan/adapt-week`
+- Free plan: workouts + manual calorie entry; Premium ($9/mo or $99/yr): AI diet plans + AI camera scan
+- Frontend: `lib/subscription-context.tsx` (SubscriptionProvider + useSubscription hook)
+- `app/upgrade.tsx` — upgrade screen with plan selection, premium management, cancel
+- Diet tab shows a premium gate banner and lock icon for free users
+- Camera scan button has a lock badge for free users
+
 ## User Preferences
 - Dark theme with black background and light green (#4ADE80) accents
 - Rubik font family for energetic fitness aesthetic

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
+import { checkSubscription, requirePremium } from "../middleware/checkSubscription";
 import { getSupabaseClient } from "../config/supabase";
 import { uploadImage } from "../middleware/upload";
 import { analyzeFoodImage } from "../services/foodVisionAI";
@@ -129,7 +130,7 @@ router.post("/camera", requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-router.post("/scan", requireAuth, async (req: AuthenticatedRequest, res) => {
+router.post("/scan", requireAuth, checkSubscription, requirePremium, async (req: AuthenticatedRequest, res) => {
     try {
       console.log("📸 Route hit: /api/calorie-log/scan");
       

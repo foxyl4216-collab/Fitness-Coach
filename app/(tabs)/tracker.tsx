@@ -18,8 +18,10 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { fetch } from 'expo/fetch';
+import { router } from 'expo-router';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
+import { useSubscription } from '@/lib/subscription-context';
 import { getApiUrl } from '@/lib/query-client';
 import { getStoredToken } from '@/lib/auth-token';
 
@@ -27,6 +29,7 @@ import { getStoredToken } from '@/lib/auth-token';
 export default function TrackerScreen() {
   const insets = useSafeAreaInsets();
   const { plan, foodLog, savedFoods, addFoodEntry, removeFoodEntry, saveFavoriteFood } = useFitCoach();
+  const { isPremium } = useSubscription();
   const [showAddModal, setShowAddModal] = useState(false);
   const [foodName, setFoodName] = useState('');
   const [foodCalories, setFoodCalories] = useState('');
@@ -109,6 +112,10 @@ export default function TrackerScreen() {
   };
 
   const handleShowScanOptions = () => {
+    if (!isPremium) {
+      router.push('/upgrade');
+      return;
+    }
     if (Platform.OS !== 'web') {
       Alert.alert('Scan Food', 'Choose a method', [
         {
@@ -335,7 +342,14 @@ export default function TrackerScreen() {
             {isScanning ? (
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (
-              <Ionicons name="camera-outline" size={20} color={Colors.primary} />
+              <View style={{ position: 'relative' }}>
+                <Ionicons name="camera-outline" size={20} color={Colors.primary} />
+                {!isPremium && (
+                  <View style={styles.lockBadge}>
+                    <Ionicons name="lock-closed" size={8} color="#000" />
+                  </View>
+                )}
+              </View>
             )}
           </Pressable>
           <Pressable
@@ -639,6 +653,17 @@ const styles = StyleSheet.create({
   },
   scanButtonActive: {
     opacity: 0.6,
+  },
+  lockBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: Colors.primary,
+    borderRadius: 6,
+    width: 12,
+    height: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addButton: {
     width: 36,

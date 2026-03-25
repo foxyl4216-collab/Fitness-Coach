@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth-context";
 import { FitCoachProvider } from "@/lib/context";
+import { SubscriptionProvider } from "@/lib/subscription-context";
 import { StatusBar } from "expo-status-bar";
 import {
   useFonts,
@@ -28,6 +29,7 @@ function RootLayoutNav() {
       <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
       <Stack.Screen name="workout-detail" options={{ headerShown: false, presentation: 'card' }} />
       <Stack.Screen name="check-in" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="upgrade" options={{ headerShown: false, presentation: 'modal' }} />
     </Stack>
   );
 }
@@ -52,10 +54,12 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <KeyboardProvider>
             <AuthProvider>
-              <FitCoachProvider>
-                <StatusBar style="light" />
-                <RootLayoutNav />
-              </FitCoachProvider>
+              <SubscriptionProvider>
+                <FitCoachProvider>
+                  <StatusBar style="light" />
+                  <RootLayoutNav />
+                </FitCoachProvider>
+              </SubscriptionProvider>
             </AuthProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>

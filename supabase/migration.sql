@@ -150,14 +150,46 @@ CREATE INDEX IF NOT EXISTS idx_weekly_checkins_week ON weekly_checkins(user_id, 
 CREATE INDEX IF NOT EXISTS idx_calorie_logs_user_id ON calorie_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_calorie_logs_date ON calorie_logs(user_id, date);
 
--- Optional: Auto-create user profile on signup via trigger
--- This ensures a user_profiles row exists for every auth.users entry
+-- TABLE: subscriptions
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  plan_type text NOT NULL DEFAULT 'free' CHECK (plan_type IN ('free', 'monthly', 'yearly')),
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired')),
+  start_date timestamptz DEFAULT now(),
+  end_date timestamptz,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id)
+);
+
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own subscription"
+  ON subscriptions FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own subscription"
+  ON subscriptions FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own subscription"
+  ON subscriptions FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+
+-- Auto-create user profile AND free subscription on signup via trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.user_profiles (user_id)
   VALUES (new.id)
   ON CONFLICT (user_id) DO NOTHING;
+
+  INSERT INTO public.subscriptions (user_id, plan_type, status)
+  VALUES (new.id, 'free', 'active')
+  ON CONFLICT (user_id) DO NOTHING;
+
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

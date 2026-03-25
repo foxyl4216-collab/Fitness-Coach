@@ -1,0 +1,184 @@
+ADD subscription system using Supabase. Do NOT rewrite existing code. ONLY add new features.
+
+---
+
+## FEATURE REQUIREMENTS
+
+FREE USER:
+
+* Access: workout generation (fat loss, muscle gain)
+* NO personalized diet plan
+* NO AI calorie scan
+* ONLY manual calorie entry
+
+PAID USER:
+
+* Monthly plan = $9
+* Yearly plan = $99
+* Full access to all features
+
+---
+
+## STEP 1 — DATABASE SETUP (SUPABASE)
+
+Create new table:
+
+subscriptions
+
+Columns:
+
+id (uuid, primary key)
+user_id (uuid, foreign key)
+plan_type (text) → "free", "monthly", "yearly"
+status (text) → "active", "expired"
+start_date (timestamp)
+end_date (timestamp)
+created_at (timestamp)
+
+---
+
+## STEP 2 — DEFAULT USER PLAN
+
+When user signs up:
+
+Insert into subscriptions:
+
+plan_type = "free"
+status = "active"
+
+---
+
+## STEP 3 — SUBSCRIPTION CHECK MIDDLEWARE
+
+Create:
+
+/middleware/checkSubscription.js
+
+Logic:
+
+* Fetch user subscription from Supabase
+* If no record → treat as free
+* If expired → downgrade to free
+
+Return in req:
+
+req.subscription = {
+plan_type: "free" | "monthly" | "yearly",
+isActive: true/false
+}
+
+---
+
+## STEP 4 — FEATURE ACCESS CONTROL
+
+Apply this middleware to routes:
+
+1. AI calorie scan route
+2. Diet plan generation route
+
+Add condition:
+
+IF req.subscription.plan_type === "free"
+
+RETURN:
+
+{
+success: false,
+message: "Upgrade to premium to access this feature"
+}
+
+---
+
+## STEP 5 — PAYMENT INTEGRATION (LOGIC ONLY)
+
+Create:
+
+/routes/subscription.js
+
+POST /subscribe
+
+Body:
+
+{
+"plan": "monthly" or "yearly"
+}
+
+Logic:
+
+* Validate plan
+* Set:
+
+IF monthly:
+end_date = now + 30 days
+
+IF yearly:
+end_date = now + 365 days
+
+* Update or insert:
+
+plan_type
+status = "active"
+start_date = now
+end_date
+
+---
+
+## STEP 6 — VERIFY ACTIVE SUBSCRIPTION
+
+In middleware:
+
+IF current_date > end_date:
+
+* status = "expired"
+* plan_type = "free"
+
+---
+
+## STEP 7 — PROTECT EXISTING FEATURES
+
+Update:
+
+1. AI camera route
+2. Diet plan route
+
+Add:
+
+checkSubscription middleware
+
+AND block free users
+
+---
+
+## STEP 8 — RESPONSE FORMAT
+
+When blocked:
+
+{
+success: false,
+message: "Premium required"
+}
+
+When allowed:
+Continue normal flow
+
+---
+
+## STEP 9 — ENV VARIABLES
+
+No new env required for now
+
+---
+
+## STEP 10 — OUTPUT REQUIRED
+
+Provide:
+
+1. SQL for subscriptions table
+2. checkSubscription middleware code
+3. subscription route code
+4. example API request
+5. integration instructions
+
+DO NOT modify existing auth.
+DO NOT change existing routes except adding middleware.
+ONLY add subscription system.

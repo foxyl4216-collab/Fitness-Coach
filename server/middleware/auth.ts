@@ -1,10 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { supabase, getSupabaseClient } from "../config/supabase";
+import type { SubscriptionInfo } from "./checkSubscription";
 
 export interface AuthenticatedRequest extends Request {
   userId?: string;
   userEmail?: string;
   supabaseClient?: ReturnType<typeof getSupabaseClient>;
+  subscription?: SubscriptionInfo;
 }
 
 export async function requireAuth(
