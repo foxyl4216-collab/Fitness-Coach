@@ -86,23 +86,32 @@ router.post("/signup", async (req, res) => {
 
     // Ensure user_profiles row exists (trigger may or may not have created it)
     if (userId) {
-      try {
-        const adminOrAnon = supabaseAdmin || supabase;
-        await adminOrAnon.from("user_profiles").insert({ user_id: userId }).select().single();
-      } catch {
-        // Row may already exist from trigger — that's fine
+      console.log("Creating profile for userId:", userId);
+      const adminOrAnon = supabaseAdmin || supabase;
+      const { error: profileError } = await adminOrAnon
+        .from("user_profiles")
+        .insert({ user_id: userId })
+        .select()
+        .single();
+      if (profileError) {
+        console.warn("Profile insert result:", profileError.message, profileError.code);
+        // If FK violation, try verifying user exists via admin
+        if (supabaseAdmin && profileError.code === "23503") {
+          const { data: verifyUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+          console.log("User verification:", verifyUser?.user?.id, verifyUser?.user?.email);
+        }
       }
 
       // Create free subscription using service role (bypasses RLS user_id check)
+      console.log("Creating subscription for userId:", userId);
       if (supabaseAdmin) {
-        try {
-          await supabaseAdmin
-            .from("subscriptions")
-            .insert({ user_id: userId, plan_type: "free", status: "active" })
-            .select()
-            .single();
-        } catch {
-          // Already exists or non-critical
+        const { error: subError } = await supabaseAdmin
+          .from("subscriptions")
+          .insert({ user_id: userId, plan_type: "free", status: "active" })
+          .select()
+          .single();
+        if (subError && !subError.message.includes("duplicate") && !subError.message.includes("unique")) {
+          console.warn("Subscription creation warning:", subError.message);
         }
       } else if (sessionData?.access_token) {
         try {

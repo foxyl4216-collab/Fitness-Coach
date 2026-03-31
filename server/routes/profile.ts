@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
-import { supabase, getSupabaseClient } from "../config/supabase";
+import { supabase, supabaseAdmin, getSupabaseClient } from "../config/supabase";
 
 const router = Router();
 
@@ -64,8 +64,10 @@ router.post("/create", requireAuth, async (req: AuthenticatedRequest, res) => {
       existing = adminExisting;
     }
 
+    const writeDb = supabaseAdmin || userDb;
+
     if (existing) {
-      const { data, error } = await supabase
+      const { data, error } = await writeDb
         .from("user_profiles")
         .update({
           age, height, weight, goal_type, focus_track,
@@ -80,7 +82,7 @@ router.post("/create", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.json({ message: "Profile updated", profile: data });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await writeDb
       .from("user_profiles")
       .insert({
         user_id: req.userId!,
@@ -112,7 +114,8 @@ router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
       return res.json({ profile: data });
     }
 
-    const { data: adminData, error: adminError } = await supabase
+    const adminDb = supabaseAdmin || supabase;
+    const { data: adminData, error: adminError } = await adminDb
       .from("user_profiles")
       .select("*")
       .eq("user_id", req.userId!)

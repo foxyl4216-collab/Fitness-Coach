@@ -1,12 +1,13 @@
 import { Router } from "express";
-import { supabase } from "../config/supabase";
+import { supabaseAdmin } from "../config/supabase";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
 
 router.get("/status", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const { data, error } = await supabase
+    const db = supabaseAdmin || req.supabaseClient!;
+    const { data, error } = await db
       .from("subscriptions")
       .select("*")
       .eq("user_id", req.userId!)
@@ -31,7 +32,7 @@ router.get("/status", requireAuth, async (req: AuthenticatedRequest, res) => {
         status = "expired";
         planType = "free";
 
-        await supabase
+        await db
           .from("subscriptions")
           .update({ status: "expired", plan_type: "free" })
           .eq("user_id", req.userId!);
@@ -67,7 +68,9 @@ router.post("/subscribe", requireAuth, async (req: AuthenticatedRequest, res) =>
       endDate.setDate(endDate.getDate() + 365);
     }
 
-    const { data: existing } = await supabase
+    const db = supabaseAdmin || req.supabaseClient!;
+
+    const { data: existing } = await db
       .from("subscriptions")
       .select("id")
       .eq("user_id", req.userId!)
@@ -76,7 +79,7 @@ router.post("/subscribe", requireAuth, async (req: AuthenticatedRequest, res) =>
     let result;
 
     if (existing) {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("subscriptions")
         .update({
           plan_type: plan,
@@ -91,7 +94,7 @@ router.post("/subscribe", requireAuth, async (req: AuthenticatedRequest, res) =>
       if (error) return res.status(500).json({ error: error.message });
       result = data;
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("subscriptions")
         .insert({
           user_id: req.userId!,
@@ -128,7 +131,8 @@ router.post("/subscribe", requireAuth, async (req: AuthenticatedRequest, res) =>
 
 router.post("/cancel", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const { data, error } = await supabase
+    const db = supabaseAdmin || req.supabaseClient!;
+    const { data, error } = await db
       .from("subscriptions")
       .update({
         plan_type: "free",
