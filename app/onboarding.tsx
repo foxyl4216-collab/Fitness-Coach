@@ -123,6 +123,11 @@ export default function OnboardingScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top + 16 }]}>
+        <LinearGradient
+          colors={['rgba(74,222,128,0.18)', 'rgba(74,222,128,0.04)', 'transparent']}
+          style={styles.headerGradient}
+          pointerEvents="none"
+        />
         <View style={styles.header}>
           {currentIndex > 0 ? (
             <Pressable onPress={goBack} style={styles.backBtn}>
@@ -342,6 +347,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 160,
   },
   header: {
     flexDirection: 'row',

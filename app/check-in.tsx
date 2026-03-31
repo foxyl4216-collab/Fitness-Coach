@@ -118,17 +118,18 @@ export default function CheckInScreen() {
           <Text style={styles.subtitle}>Track your progress so we can adapt your plan</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Current Weight (kg)</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="scale-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+            <Text style={styles.inputLabel}>Current Weight</Text>
+            <View style={styles.largeInputWrapper}>
               <TextInput
-                style={styles.input}
+                style={styles.largeNumInput}
                 value={weight}
                 onChangeText={setWeight}
-                placeholder="e.g. 68.5"
+                placeholder="0.0"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="decimal-pad"
+                textAlign="center"
               />
+              <Text style={styles.largeInputUnit}>kg</Text>
             </View>
           </View>
 
@@ -174,17 +175,18 @@ export default function CheckInScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Waist Measurement (cm) — optional</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="body-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+            <Text style={styles.inputLabel}>Waist Measurement <Text style={styles.optionalTag}>(optional)</Text></Text>
+            <View style={styles.largeInputWrapper}>
               <TextInput
-                style={styles.input}
+                style={styles.largeNumInput}
                 value={waist}
                 onChangeText={setWaist}
-                placeholder="e.g. 80"
+                placeholder="0"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="decimal-pad"
+                textAlign="center"
               />
+              <Text style={styles.largeInputUnit}>cm</Text>
             </View>
           </View>
         </ScrollView>
@@ -279,6 +281,39 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  optionalTag: {
+    fontSize: 11,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    textTransform: 'none',
+  },
+  largeInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  largeNumInput: {
+    fontSize: 40,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.text,
+    minWidth: 120,
+    textAlign: 'center',
+    padding: 0,
+  },
+  largeInputUnit: {
+    fontSize: 18,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.textMuted,
+    alignSelf: 'flex-end',
+    paddingBottom: 6,
   },
   inputContainer: {
     flexDirection: 'row',

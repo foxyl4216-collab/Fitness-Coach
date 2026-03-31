@@ -189,6 +189,30 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      <View style={styles.metricTiles}>
+        <View style={styles.metricTile}>
+          <View style={[styles.metricTileIcon, { backgroundColor: 'rgba(167,139,250,0.12)' }]}>
+            <MaterialCommunityIcons name="arm-flex" size={18} color={Colors.violet} />
+          </View>
+          <Text style={[styles.metricTileValue, { color: Colors.violet }]}>{plan.proteinGrams}g</Text>
+          <Text style={styles.metricTileLabel}>protein</Text>
+        </View>
+        <View style={styles.metricTile}>
+          <View style={[styles.metricTileIcon, { backgroundColor: 'rgba(0,212,255,0.12)' }]}>
+            <Ionicons name="calendar-outline" size={18} color={Colors.accent} />
+          </View>
+          <Text style={[styles.metricTileValue, { color: Colors.accent }]}>{weekNumber}</Text>
+          <Text style={styles.metricTileLabel}>current week</Text>
+        </View>
+        <View style={styles.metricTile}>
+          <View style={[styles.metricTileIcon, { backgroundColor: 'rgba(74,222,128,0.12)' }]}>
+            <Ionicons name="flame-outline" size={18} color={Colors.primary} />
+          </View>
+          <Text style={[styles.metricTileValue, { color: Colors.primary }]}>{checkIns.length}</Text>
+          <Text style={styles.metricTileLabel}>check-ins</Text>
+        </View>
+      </View>
+
       <Text style={styles.sectionTitle}>Today's Workout</Text>
       <Pressable
         onPress={() => {
@@ -386,6 +410,41 @@ const styles = StyleSheet.create({
   calorieBarFill: {
     height: '100%',
     borderRadius: 2,
+  },
+  metricTiles: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 28,
+  },
+  metricTile: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 14,
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  metricTileIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  metricTileValue: {
+    fontSize: 18,
+    fontFamily: 'Rubik_700Bold',
+    lineHeight: 20,
+  },
+  metricTileLabel: {
+    fontSize: 10,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
   sectionTitle: {
     fontSize: 16,

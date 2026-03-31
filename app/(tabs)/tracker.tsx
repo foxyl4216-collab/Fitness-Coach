@@ -285,7 +285,7 @@ export default function TrackerScreen() {
         keyExtractor={item => item.id}
         scrollEnabled={!!todayFoods.length}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 100, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 110 : 120, paddingHorizontal: 20 }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="restaurant-outline" size={36} color={Colors.textMuted} />
@@ -312,6 +312,37 @@ export default function TrackerScreen() {
           </View>
         )}
       />
+
+      <View style={[styles.floatingBar, {
+        bottom: Platform.OS === 'web' ? 34 : insets.bottom + 16,
+      }]}>
+        <Pressable
+          onPress={handleShowScanOptions}
+          style={[styles.floatingBarBtn, styles.floatingBarScan]}
+          disabled={isScanning}
+        >
+          {isScanning ? (
+            <ActivityIndicator size="small" color={Colors.accent} />
+          ) : (
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="camera-outline" size={20} color={Colors.accent} />
+              {!isPremium && (
+                <View style={styles.lockBadge}>
+                  <Ionicons name="lock-closed" size={7} color={Colors.black} />
+                </View>
+              )}
+            </View>
+          )}
+          <Text style={styles.floatingBarScanText}>Scan</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAddModal(true); }}
+          style={[styles.floatingBarBtn, styles.floatingBarAdd]}
+        >
+          <Ionicons name="add" size={22} color={Colors.black} />
+          <Text style={styles.floatingBarAddText}>Add Food</Text>
+        </Pressable>
+      </View>
 
       <Modal visible={showAddModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -583,6 +614,43 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     padding: 4,
+  },
+  floatingBar: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    gap: 10,
+    zIndex: 100,
+  },
+  floatingBarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  floatingBarScan: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    borderColor: Colors.accent + '40',
+  },
+  floatingBarScanText: {
+    fontSize: 14,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.accent,
+  },
+  floatingBarAdd: {
+    flex: 2,
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  floatingBarAddText: {
+    fontSize: 15,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.black,
   },
   modalOverlay: {
     flex: 1,
