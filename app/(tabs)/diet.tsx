@@ -155,6 +155,33 @@ export default function DietScreen() {
     );
   }
 
+  if (!isPremium && !subLoading) {
+    return (
+      <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Diet Plan</Text>
+        </View>
+        <View style={styles.paywallContainer}>
+          <View style={styles.paywallIconWrap}>
+            <Ionicons name="lock-closed" size={36} color={Colors.primary} />
+          </View>
+          <Text style={styles.paywallTitle}>Premium Feature</Text>
+          <Text style={styles.paywallSubtitle}>
+            AI-generated diet plans with macro targets and personalized meal schedules are available on Premium.
+          </Text>
+          <Pressable
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/upgrade'); }}
+            style={({ pressed }) => [styles.paywallBtn, pressed && { opacity: 0.85 }]}
+          >
+            <Ionicons name="flash" size={18} color={Colors.black} />
+            <Text style={styles.paywallBtnText}>Upgrade to Premium</Text>
+          </Pressable>
+          <Text style={styles.paywallNote}>Workouts and manual calorie tracking are always free</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -354,6 +381,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Rubik_400Regular',
     color: Colors.error,
+  },
+  paywallContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 36,
+    paddingBottom: 60,
+  },
+  paywallIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(74,222,128,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  paywallTitle: {
+    fontSize: 22,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  paywallSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  paywallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  paywallBtnText: {
+    fontSize: 16,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.black,
+  },
+  paywallNote: {
+    fontSize: 12,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
   emptyContainer: {
     alignItems: 'center',

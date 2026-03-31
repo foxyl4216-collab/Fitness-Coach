@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -113,6 +113,20 @@ export default function HomeScreen() {
   const calorieProgress = Math.min(1, caloriesEaten / plan.dailyCalories);
   const isOver = caloriesEaten > plan.dailyCalories;
 
+  const streak = useMemo(() => {
+    if (!checkIns.length) return 0;
+    const sorted = [...checkIns].sort((a, b) => b.weekNumber - a.weekNumber);
+    let count = 1;
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i - 1].weekNumber - sorted[i].weekNumber === 1) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  }, [checkIns]);
+
   return (
     <ScrollView
       style={styles.container}
@@ -206,10 +220,10 @@ export default function HomeScreen() {
         </View>
         <View style={styles.metricTile}>
           <View style={[styles.metricTileIcon, { backgroundColor: 'rgba(74,222,128,0.12)' }]}>
-            <Ionicons name="flame-outline" size={18} color={Colors.primary} />
+            <Ionicons name="flame" size={18} color={Colors.primary} />
           </View>
-          <Text style={[styles.metricTileValue, { color: Colors.primary }]}>{checkIns.length}</Text>
-          <Text style={styles.metricTileLabel}>check-ins</Text>
+          <Text style={[styles.metricTileValue, { color: Colors.primary }]}>{streak}</Text>
+          <Text style={styles.metricTileLabel}>week streak</Text>
         </View>
       </View>
 

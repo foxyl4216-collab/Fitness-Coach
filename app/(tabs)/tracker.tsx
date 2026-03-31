@@ -11,6 +11,8 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -72,6 +74,35 @@ export default function TrackerScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const slideY = useRef(new Animated.Value(0)).current;
+
+  const openModal = () => {
+    slideY.setValue(600);
+    setShowAddModal(true);
+    Animated.spring(slideY, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
+  };
+
+  const closeModal = () => {
+    Animated.timing(slideY, { toValue: 600, duration: 220, useNativeDriver: true }).start(() => {
+      setShowAddModal(false);
+      slideY.setValue(0);
+    });
+  };
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => g.dy > 5,
+    onPanResponderMove: (_, g) => {
+      if (g.dy > 0) slideY.setValue(g.dy);
+    },
+    onPanResponderRelease: (_, g) => {
+      if (g.dy >= 80) {
+        closeModal();
+      } else {
+        Animated.spring(slideY, { toValue: 0, useNativeDriver: true }).start();
+      }
+    },
+  }), []);
 
   const todayFoods = useMemo(
     () => foodLog.filter(f => f.date === selectedDate).sort((a, b) => b.timestamp - a.timestamp),
@@ -234,7 +265,7 @@ export default function TrackerScreen() {
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (
               <View>
-                <Ionicons name="camera-outline" size={19} color={Colors.primary} />
+                <Ionicons name="camera-outline" size={26} color={Colors.primary} />
                 {!isPremium && (
                   <View style={styles.lockBadge}>
                     <Ionicons name="lock-closed" size={7} color={Colors.black} />
@@ -244,10 +275,10 @@ export default function TrackerScreen() {
             )}
           </Pressable>
           <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAddModal(true); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
             style={[styles.iconBtn, styles.iconBtnPrimary]}
           >
-            <Ionicons name="add" size={22} color={Colors.black} />
+            <Ionicons name="add" size={26} color={Colors.black} />
           </Pressable>
         </View>
       </View>
@@ -336,21 +367,23 @@ export default function TrackerScreen() {
           <Text style={styles.floatingBarScanText}>Scan</Text>
         </Pressable>
         <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAddModal(true); }}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
           style={[styles.floatingBarBtn, styles.floatingBarAdd]}
         >
-          <Ionicons name="add" size={22} color={Colors.black} />
+          <Ionicons name="add" size={26} color={Colors.black} />
           <Text style={styles.floatingBarAddText}>Add Food</Text>
         </Pressable>
       </View>
 
-      <Modal visible={showAddModal} animationType="slide" transparent>
+      <Modal visible={showAddModal} animationType="none" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={styles.modalHandle} />
+          <Animated.View style={[styles.modalContent, { paddingBottom: insets.bottom + 16, transform: [{ translateY: slideY }] }]}>
+            <View style={styles.modalHandleArea} {...panResponder.panHandlers}>
+              <View style={styles.modalHandle} />
+            </View>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Food</Text>
-              <Pressable onPress={() => setShowAddModal(false)}>
+              <Pressable onPress={closeModal}>
                 <Ionicons name="close" size={22} color={Colors.textSecondary} />
               </Pressable>
             </View>
@@ -402,7 +435,7 @@ export default function TrackerScreen() {
                 <Text style={styles.addBtnText}>Add Entry</Text>
               </Pressable>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -449,9 +482,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -667,13 +700,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     borderColor: Colors.borderStrong,
   },
+  modalHandleArea: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 2,
+  },
   modalHandle: {
     width: 36,
     height: 4,
     borderRadius: 2,
     backgroundColor: Colors.textMuted,
-    alignSelf: 'center',
-    marginBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row',
