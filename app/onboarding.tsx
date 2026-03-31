@@ -132,12 +132,27 @@ export default function OnboardingScreen() {
             <View style={{ width: 40 }} />
           )}
           <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-            </View>
-            <View style={styles.stepPills}>
+            <View style={styles.stepDots}>
               {steps.map((s, i) => (
-                <Text key={s} style={[styles.stepPillText, i <= currentIndex && styles.stepPillTextActive]}>
+                <View key={s} style={styles.stepDotWrapper}>
+                  <View style={[
+                    styles.stepDot,
+                    i < currentIndex && styles.stepDotDone,
+                    i === currentIndex && styles.stepDotActive,
+                  ]}>
+                    {i < currentIndex && (
+                      <Ionicons name="checkmark" size={10} color={Colors.black} />
+                    )}
+                  </View>
+                  {i < steps.length - 1 && (
+                    <View style={[styles.stepLine, i < currentIndex && styles.stepLineDone]} />
+                  )}
+                </View>
+              ))}
+            </View>
+            <View style={styles.stepLabels}>
+              {steps.map((s, i) => (
+                <Text key={s} style={[styles.stepLabelText, i === currentIndex && styles.stepLabelActive]}>
                   {STEP_LABELS[s]}
                 </Text>
               ))}
@@ -347,31 +362,56 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     flex: 1,
-    gap: 6,
+    gap: 8,
+    alignItems: 'center',
   },
-  progressBar: {
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: Colors.surface,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 2,
-  },
-  stepPills: {
+  stepDots: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  stepPillText: {
+  stepDotWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stepDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepDotActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  stepDotDone: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  stepLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: Colors.surface,
+    marginHorizontal: 4,
+  },
+  stepLineDone: {
+    backgroundColor: Colors.primary,
+  },
+  stepLabels: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  stepLabelText: {
     fontSize: 10,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  stepPillTextActive: {
+  stepLabelActive: {
     color: Colors.primary,
   },
   scrollContent: {

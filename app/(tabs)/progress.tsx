@@ -15,7 +15,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-
+import Svg, {
+  Path,
+  Circle as SvgCircle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+} from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -24,6 +30,60 @@ import { useAuth } from '@/lib/auth-context';
 import { router } from 'expo-router';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
+const CHART_H = 110;
+const CHART_W = 280;
+
+function WeightAreaChart({
+  data, minWeight, maxWeight, weightRange,
+}: {
+  data: { week: number; weight: number }[];
+  minWeight: number;
+  maxWeight: number;
+  weightRange: number;
+}) {
+  const pts = data.map((d, i) => ({
+    x: (i / Math.max(data.length - 1, 1)) * CHART_W,
+    y: CHART_H - 10 - ((d.weight - minWeight) / weightRange) * (CHART_H - 20),
+  }));
+
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const areaPath = linePath
+    + ` L${pts[pts.length - 1].x.toFixed(1)},${CHART_H} L0,${CHART_H} Z`;
+
+  return (
+    <View>
+      <Svg width="100%" height={CHART_H + 20} viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`} preserveAspectRatio="none">
+        <Defs>
+          <SvgLinearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor={Colors.primary} stopOpacity="0.35" />
+            <Stop offset="100%" stopColor={Colors.primary} stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Path d={areaPath} fill="url(#areaFill)" />
+        <Path d={linePath} stroke={Colors.primary} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <SvgCircle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r="4"
+            fill={i === pts.length - 1 ? Colors.primary : Colors.card}
+            stroke={Colors.primary}
+            strokeWidth="2"
+          />
+        ))}
+      </Svg>
+      <View style={styles.chartLabels}>
+        {data.map((d, i) => (
+          <Text key={i} style={[styles.chartLabel, i === data.length - 1 && { color: Colors.primary }]}>
+            W{d.week}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -166,19 +226,27 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, isGoalMet && styles.statCardPositive]}>
-            <Text style={[styles.statValue, isGoalMet && { color: Colors.success }]}>
-              {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}
-            </Text>
-            <Text style={styles.statLabel}>kg change</Text>
+          <View style={styles.statsRow}>
+            <View style={[styles.statCard, isGoalMet && styles.statCardPositive]}>
+              <Text style={[styles.statValue, isGoalMet && { color: Colors.success }]}>
+                {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}
+              </Text>
+              <Text style={styles.statLabel}>kg change</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{avgAdherence}%</Text>
+              <Text style={styles.statLabel}>avg adherence</Text>
+            </View>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{avgAdherence}%</Text>
-            <Text style={styles.statLabel}>avg adherence</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{checkIns.length}</Text>
-            <Text style={styles.statLabel}>check-ins</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{checkIns.length}</Text>
+              <Text style={styles.statLabel}>check-ins done</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: Colors.accent }]}>{weekNumber}</Text>
+              <Text style={styles.statLabel}>current week</Text>
+            </View>
           </View>
         </View>
 
@@ -208,23 +276,7 @@ export default function ProfileScreen() {
           <>
             <Text style={styles.sectionTitle}>Weight Trend</Text>
             <View style={styles.chartCard}>
-              <View style={styles.chart}>
-                {weightData.map((d, i) => {
-                  const normalizedHeight = ((d.weight - minWeight) / weightRange) * 100;
-                  const isCurrent = i === weightData.length - 1;
-                  return (
-                    <View key={i} style={styles.chartBarContainer}>
-                      <Text style={styles.chartBarValue}>{d.weight}</Text>
-                      <View style={[
-                        styles.chartBar,
-                        { height: Math.max(normalizedHeight, 8), backgroundColor: isCurrent ? Colors.primary : Colors.surface },
-                        isCurrent && styles.chartBarCurrent,
-                      ]} />
-                      <Text style={styles.chartBarLabel}>W{d.week}</Text>
-                    </View>
-                  );
-                })}
-              </View>
+              <WeightAreaChart data={weightData} minWeight={minWeight} maxWeight={maxWeight} weightRange={weightRange} />
             </View>
           </>
         )}
@@ -399,10 +451,14 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   statsGrid: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 8,
     marginBottom: 28,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 0,
   },
   statCard: {
     flex: 1,
@@ -482,40 +538,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     backgroundColor: Colors.card,
     borderRadius: 18,
-    padding: 20,
+    padding: 16,
     marginBottom: 28,
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
   },
-  chart: {
+  chartLabels: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    height: 120,
+    justifyContent: 'space-between',
+    paddingTop: 4,
   },
-  chartBarContainer: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  chartBarValue: {
-    fontSize: 9,
-    fontFamily: 'Rubik_500Medium',
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  chartBar: {
-    width: 18,
-    borderRadius: 5,
-    backgroundColor: Colors.surface,
-  },
-  chartBarCurrent: {
-    backgroundColor: Colors.primary,
-  },
-  chartBarLabel: {
-    fontSize: 9,
+  chartLabel: {
+    fontSize: 10,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
-    marginTop: 4,
   },
   emptyCheckins: {
     alignItems: 'center',

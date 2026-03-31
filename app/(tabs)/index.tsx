@@ -9,12 +9,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Animated, { useAnimatedProps, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import { useAuth } from '@/lib/auth-context';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 function CalorieRing({ progress, eaten, remaining, isOver }: {
   progress: number;
@@ -27,8 +30,19 @@ function CalorieRing({ progress, eaten, remaining, isOver }: {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const clampedProgress = Math.min(1, Math.max(0, progress));
-  const strokeDashoffset = circumference * (1 - clampedProgress);
   const strokeColor = isOver ? Colors.error : Colors.primary;
+
+  const animValue = useSharedValue(0);
+  useEffect(() => {
+    animValue.value = withTiming(clampedProgress, {
+      duration: 900,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [clampedProgress]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: circumference * (1 - animValue.value),
+  }));
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -47,7 +61,7 @@ function CalorieRing({ progress, eaten, remaining, isOver }: {
           stroke={Colors.surface}
           strokeWidth={strokeWidth}
         />
-        <Circle
+        <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -55,9 +69,9 @@ function CalorieRing({ progress, eaten, remaining, isOver }: {
           stroke={strokeColor}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          animatedProps={animatedProps}
         />
       </Svg>
       <View style={{ alignItems: 'center' }}>

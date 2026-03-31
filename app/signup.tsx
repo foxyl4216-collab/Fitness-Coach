@@ -13,6 +13,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import Svg, { Defs, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -64,123 +66,176 @@ export default function SignupScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{
-          paddingTop: Platform.OS === 'web' ? 67 : insets.top + 32,
-          paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 20,
-          flexGrow: 1,
-        }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.brandSection}>
-          <View style={styles.logoRing}>
-            <LinearGradient
-              colors={['rgba(0,212,255,0.25)', 'rgba(74,222,128,0.2)']}
-              style={styles.logoRingGradient}
-            >
-              <View style={styles.logoInner}>
-                <Ionicons name="fitness" size={36} color={Colors.accent} />
-              </View>
-            </LinearGradient>
-          </View>
-          <Text style={styles.brandTitle}>Join FitCoach</Text>
-          <Text style={styles.brandSubtitle}>Start your fitness journey today</Text>
-        </View>
+      <View style={styles.container}>
+        <Svg style={StyleSheet.absoluteFillObject as object} viewBox="0 0 375 812">
+          <Defs>
+            <RadialGradient id="bg" cx="50%" cy="35%" r="60%" fx="50%" fy="35%">
+              <Stop offset="0%" stopColor="#0A1F2A" stopOpacity="1" />
+              <Stop offset="100%" stopColor="#000000" stopOpacity="1" />
+            </RadialGradient>
+          </Defs>
+          <Rect x="0" y="0" width="375" height="812" fill="url(#bg)" />
+        </Svg>
 
-        <View style={styles.card}>
-          {error ? (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color={Colors.error} />
-              <Text style={styles.errorText}>{error}</Text>
+        <ScrollView
+          contentContainerStyle={{
+            paddingTop: Platform.OS === 'web' ? 67 : insets.top + 32,
+            paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 20,
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.brandSection}>
+            <View style={styles.logoRing}>
+              <LinearGradient
+                colors={['rgba(0,212,255,0.25)', 'rgba(74,222,128,0.2)']}
+                style={styles.logoRingGradient}
+              >
+                <View style={styles.logoInner}>
+                  <Ionicons name="fitness" size={36} color={Colors.accent} />
+                </View>
+              </LinearGradient>
             </View>
-          ) : null}
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="your@email.com"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-            </View>
+            <Text style={styles.brandTitle}>Join FitCoach</Text>
+            <Text style={styles.brandSubtitle}>Start your fitness journey today</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Min. 6 characters"
-                placeholderTextColor={Colors.textMuted}
-                secureTextEntry={!showPassword}
-                editable={!loading}
-              />
-              <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={Colors.textMuted}
+          <View style={styles.cardWrapper}>
+            {Platform.OS !== 'web' ? (
+              <BlurView intensity={30} tint="dark" style={styles.blurCard}>
+                <FormContent
+                  error={error}
+                  email={email} setEmail={setEmail}
+                  password={password} setPassword={setPassword}
+                  confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+                  showPassword={showPassword} setShowPassword={setShowPassword}
+                  loading={loading} onSubmit={handleSignup}
                 />
-              </Pressable>
-            </View>
+              </BlurView>
+            ) : (
+              <View style={styles.card}>
+                <FormContent
+                  error={error}
+                  email={email} setEmail={setEmail}
+                  password={password} setPassword={setPassword}
+                  confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+                  showPassword={showPassword} setShowPassword={setShowPassword}
+                  loading={loading} onSubmit={handleSignup}
+                />
+              </View>
+            )}
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Confirm Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Re-enter password"
-                placeholderTextColor={Colors.textMuted}
-                secureTextEntry={!showPassword}
-                editable={!loading}
-              />
-            </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <Pressable onPress={() => router.back()}>
+              <Text style={styles.footerLink}>Sign In</Text>
+            </Pressable>
           </View>
-
-          <Pressable
-            onPress={handleSignup}
-            disabled={loading}
-            style={({ pressed }) => [styles.signupBtn, pressed && { opacity: 0.85 }, loading && { opacity: 0.6 }]}
-          >
-            <LinearGradient
-              colors={['#4ADE80', '#22C55E']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.signupBtnGradient}
-            >
-              {loading ? (
-                <ActivityIndicator color={Colors.black} />
-              ) : (
-                <Text style={styles.signupBtnText}>Create Account</Text>
-              )}
-            </LinearGradient>
-          </Pressable>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.footerLink}>Sign In</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
+  );
+}
+
+function FormContent({
+  error, email, setEmail, password, setPassword,
+  confirmPassword, setConfirmPassword,
+  showPassword, setShowPassword, loading, onSubmit,
+}: {
+  error: string;
+  email: string; setEmail: (v: string) => void;
+  password: string; setPassword: (v: string) => void;
+  confirmPassword: string; setConfirmPassword: (v: string) => void;
+  showPassword: boolean; setShowPassword: (v: boolean) => void;
+  loading: boolean; onSubmit: () => void;
+}) {
+  return (
+    <>
+      {error ? (
+        <View style={styles.errorBox}>
+          <Ionicons name="alert-circle" size={16} color={Colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Email</Text>
+        <View style={styles.inputContainer}>
+          <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="your@email.com"
+            placeholderTextColor={Colors.textMuted}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
+          />
+        </View>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Password</Text>
+        <View style={styles.inputContainer}>
+          <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Min. 6 characters"
+            placeholderTextColor={Colors.textMuted}
+            secureTextEntry={!showPassword}
+            editable={!loading}
+          />
+          <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={Colors.textMuted}
+            />
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.inputLabel}>Confirm Password</Text>
+        <View style={styles.inputContainer}>
+          <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Re-enter password"
+            placeholderTextColor={Colors.textMuted}
+            secureTextEntry={!showPassword}
+            editable={!loading}
+          />
+        </View>
+      </View>
+
+      <Pressable
+        onPress={onSubmit}
+        disabled={loading}
+        style={({ pressed }) => [styles.signupBtn, pressed && { opacity: 0.85 }, loading && { opacity: 0.6 }]}
+      >
+        <LinearGradient
+          colors={['#4ADE80', '#22C55E']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.signupBtnGradient}
+        >
+          {loading ? (
+            <ActivityIndicator color={Colors.black} />
+          ) : (
+            <Text style={styles.signupBtnText}>Create Account</Text>
+          )}
+        </LinearGradient>
+      </Pressable>
+    </>
   );
 }
 
@@ -232,13 +287,20 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 4,
   },
-  card: {
+  cardWrapper: {
     marginHorizontal: 20,
-    backgroundColor: Colors.card,
     borderRadius: 24,
-    padding: 24,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  blurCard: {
+    padding: 24,
+    backgroundColor: 'rgba(17,17,24,0.6)',
+  },
+  card: {
+    padding: 24,
+    backgroundColor: Colors.card,
   },
   errorBox: {
     flexDirection: 'row',
