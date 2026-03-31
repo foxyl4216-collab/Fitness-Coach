@@ -115,10 +115,10 @@ export default function HomeScreen() {
 
   const streak = useMemo(() => {
     if (!checkIns.length) return 0;
-    const sorted = [...checkIns].sort((a, b) => b.weekNumber - a.weekNumber);
+    const uniqueWeeks = Array.from(new Set(checkIns.map(c => c.weekNumber))).sort((a, b) => b - a);
     let count = 1;
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i - 1].weekNumber - sorted[i].weekNumber === 1) {
+    for (let i = 1; i < uniqueWeeks.length; i++) {
+      if (uniqueWeeks[i - 1] - uniqueWeeks[i] === 1) {
         count++;
       } else {
         break;

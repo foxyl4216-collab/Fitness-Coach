@@ -155,7 +155,15 @@ export default function DietScreen() {
     );
   }
 
-  if (!isPremium && !subLoading) {
+  if (subLoading) {
+    return (
+      <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (!isPremium) {
     return (
       <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
         <View style={styles.header}>
@@ -214,23 +222,6 @@ export default function DietScreen() {
           )}
         </Pressable>
       </View>
-
-      {!isPremium && !subLoading && (
-        <Pressable onPress={() => router.push('/upgrade')} style={styles.premiumGate}>
-          <View style={styles.premiumGateLeft}>
-            <View style={styles.premiumIconWrap}>
-              <Ionicons name="flash" size={16} color="#FFD700" />
-            </View>
-            <View>
-              <Text style={styles.premiumGateTitle}>Premium Feature</Text>
-              <Text style={styles.premiumGateSub}>AI diet plans require premium</Text>
-            </View>
-          </View>
-          <View style={styles.upgradePill}>
-            <Text style={styles.upgradePillText}>Upgrade</Text>
-          </View>
-        </Pressable>
-      )}
 
       {isWorking && !dietPlan && (
         <View style={styles.loadingContainer}>
@@ -680,53 +671,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
-  },
-  premiumGate: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 14,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.2)',
-  },
-  premiumGateLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  premiumIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,215,0,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  premiumGateTitle: {
-    fontSize: 14,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
-  },
-  premiumGateSub: {
-    fontSize: 12,
-    fontFamily: 'Rubik_400Regular',
-    color: Colors.textSecondary,
-    marginTop: 1,
-  },
-  upgradePill: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
-  upgradePillText: {
-    fontSize: 12,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.black,
   },
 });
