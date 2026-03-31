@@ -33,23 +33,19 @@ export default function SignupScreen() {
       setError('Please fill in all fields');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError('Please enter a valid email address');
       return;
     }
-
     setError('');
     setLoading(true);
     try {
@@ -67,31 +63,35 @@ export default function SignupScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={{
-          paddingTop: Platform.OS === 'web' ? 67 : insets.top + 40,
+          paddingTop: Platform.OS === 'web' ? 67 : insets.top + 32,
           paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 20,
           flexGrow: 1,
         }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.brandSection}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="fitness" size={40} color={Colors.primary} />
+          <View style={styles.logoRing}>
+            <LinearGradient
+              colors={['rgba(0,212,255,0.25)', 'rgba(74,222,128,0.2)']}
+              style={styles.logoRingGradient}
+            >
+              <View style={styles.logoInner}>
+                <Ionicons name="fitness" size={36} color={Colors.accent} />
+              </View>
+            </LinearGradient>
           </View>
           <Text style={styles.brandTitle}>Join FitCoach</Text>
           <Text style={styles.brandSubtitle}>Start your fitness journey today</Text>
         </View>
 
-        <View style={styles.form}>
+        <View style={styles.card}>
           {error ? (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={18} color={Colors.error} />
+              <Ionicons name="alert-circle" size={16} color={Colors.error} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
@@ -99,7 +99,7 @@ export default function SignupScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Email</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={email}
@@ -117,7 +117,7 @@ export default function SignupScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Password</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 value={password}
@@ -140,7 +140,7 @@ export default function SignupScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Confirm Password</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
@@ -156,7 +156,7 @@ export default function SignupScreen() {
           <Pressable
             onPress={handleSignup}
             disabled={loading}
-            style={({ pressed }) => [styles.signupBtn, pressed && { opacity: 0.9 }, loading && { opacity: 0.6 }]}
+            style={({ pressed }) => [styles.signupBtn, pressed && { opacity: 0.85 }, loading && { opacity: 0.6 }]}
           >
             <LinearGradient
               colors={['#4ADE80', '#22C55E']}
@@ -191,59 +191,87 @@ const styles = StyleSheet.create({
   },
   brandSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: 'rgba(74,222,128,0.12)',
+  logoRing: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,255,0.2)',
+  },
+  logoRingGradient: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoInner: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: Colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   brandTitle: {
     fontSize: 28,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   brandSubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
     marginTop: 4,
   },
-  form: {
-    paddingHorizontal: 24,
+  card: {
+    marginHorizontal: 20,
+    backgroundColor: Colors.card,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(239,68,68,0.1)',
+    backgroundColor: 'rgba(239,68,68,0.08)',
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
   },
   errorText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.error,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Rubik_500Medium',
-    color: Colors.textSecondary,
-    marginBottom: 8,
+    color: Colors.textMuted,
+    marginBottom: 7,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.surface,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -263,17 +291,17 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   signupBtn: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     marginTop: 8,
   },
   signupBtnGradient: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 15,
   },
   signupBtnText: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.black,
   },
@@ -281,15 +309,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 'auto',
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
   footerText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
   },
   footerLink: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.primary,
   },

@@ -44,18 +44,14 @@ export default function ProfileScreen() {
   const initials = useMemo(() => {
     const name = user?.displayName || displayName;
     const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return name.slice(0, 2).toUpperCase();
   }, [user, displayName]);
 
   const weightData = useMemo(() => {
     if (!profile) return [];
     const data = [{ week: 0, weight: profile.weightKg }];
-    checkIns.forEach(c => {
-      data.push({ week: c.weekNumber, weight: c.weightKg });
-    });
+    checkIns.forEach(c => { data.push({ week: c.weekNumber, weight: c.weightKg }); });
     return data;
   }, [profile, checkIns]);
 
@@ -83,74 +79,39 @@ export default function ProfileScreen() {
   const handleSaveProfile = async () => {
     const trimmedName = editName.trim();
     const trimmedEmail = editEmail.trim();
-
-    if (!trimmedName) {
-      setEditError('Name is required');
-      return;
-    }
-
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setEditError('Valid email is required');
-      return;
-    }
-
+    if (!trimmedName) { setEditError('Name is required'); return; }
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { setEditError('Valid email is required'); return; }
     setSaving(true);
     setEditError(null);
     try {
-      await updateProfile({
-        displayName: trimmedName,
-        email: trimmedEmail !== user?.email ? trimmedEmail : undefined,
-      });
+      await updateProfile({ displayName: trimmedName, email: trimmedEmail !== user?.email ? trimmedEmail : undefined });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowEditModal(false);
     } catch (e: any) {
       const msg = e?.message || 'Failed to update profile';
       setEditError(msg.includes(':') ? msg.split(':').slice(1).join(':').trim() : msg);
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const handleReset = () => {
-    Alert.alert(
-      'Start Over',
-      'This will erase all your data and plans. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Start Over',
-          style: 'destructive',
-          onPress: async () => {
-            await resetApp();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            router.replace('/onboarding');
-          },
-        },
-      ]
-    );
+    Alert.alert('Start Over', 'This will erase all your data and plans. Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Start Over', style: 'destructive', onPress: async () => {
+        await resetApp();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        router.replace('/onboarding');
+      }},
+    ]);
   };
 
   const handleLogout = async () => {
     if (Platform.OS === 'web') {
-      if (window.confirm('Are you sure you want to sign out?')) {
-        await logout();
-        router.replace('/login');
-      }
+      if (window.confirm('Are you sure you want to sign out?')) { await logout(); router.replace('/login'); }
     } else {
-      Alert.alert(
-        'Sign Out',
-        'Are you sure you want to sign out?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Sign Out',
-            onPress: async () => {
-              await logout();
-              router.replace('/login');
-            },
-          },
-        ]
-      );
+      Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', onPress: async () => { await logout(); router.replace('/login'); } },
+      ]);
     }
   };
 
@@ -166,6 +127,8 @@ export default function ProfileScreen() {
     );
   }
 
+  const isGoalMet = (weightChange < 0 && profile.goal === 'fat_loss') || (weightChange > 0 && profile.goal === 'muscle_gain');
+
   return (
     <>
       <ScrollView
@@ -178,100 +141,63 @@ export default function ProfileScreen() {
       >
         <View style={styles.profileHeader}>
           <Pressable style={styles.editBtn} onPress={openEditModal}>
-            <Ionicons name="create-outline" size={20} color={Colors.text} />
+            <Ionicons name="create-outline" size={18} color={Colors.textSecondary} />
           </Pressable>
-          <LinearGradient
-            colors={['#4ADE80', '#22C55E']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.avatar}
-          >
-            <Text style={styles.avatarText}>{initials}</Text>
-          </LinearGradient>
+          <View style={styles.avatarRing}>
+            <LinearGradient colors={['#4ADE80', '#00D4FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarGradient}>
+              <View style={styles.avatarInner}>
+                <Text style={styles.avatarText}>{initials}</Text>
+              </View>
+            </LinearGradient>
+          </View>
           <Text style={styles.userName}>{displayName}</Text>
-          {user?.email && (
-            <Text style={styles.userEmail}>{user.email}</Text>
-          )}
+          {user?.email && <Text style={styles.userEmail}>{user.email}</Text>}
           <View style={styles.goalBadge}>
-            <Ionicons
-              name={profile.goal === 'fat_loss' ? 'flame' : 'barbell'}
-              size={14}
-              color={Colors.primary}
-            />
+            <Ionicons name={profile.goal === 'fat_loss' ? 'flame' : 'barbell'} size={13} color={Colors.primary} />
             <Text style={styles.goalBadgeText}>
               {profile.goal === 'fat_loss' ? 'Fat Loss' : 'Muscle Gain'}
-              {profile.focusTrack !== 'none' && (
-                ` · ${profile.focusTrack === 'belly_fat' ? 'Belly Focus' : 'Glute Focus'}`
-              )}
+              {profile.focusTrack !== 'none' && ` · ${profile.focusTrack === 'belly_fat' ? 'Belly Focus' : 'Glute Focus'}`}
             </Text>
           </View>
         </View>
 
-        <View style={styles.detailsCard}>
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconWrap}>
-              <Ionicons name="calendar-outline" size={16} color={Colors.primary} />
-            </View>
-            <Text style={styles.detailLabel}>Current Week</Text>
-            <Text style={styles.detailValue}>{weekNumber}</Text>
-          </View>
-          <View style={styles.detailDivider} />
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconWrap}>
-              <Ionicons name="flame-outline" size={16} color={Colors.primary} />
-            </View>
-            <Text style={styles.detailLabel}>Daily Calories</Text>
-            <Text style={styles.detailValue}>{plan.dailyCalories} kcal</Text>
-          </View>
-          <View style={styles.detailDivider} />
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconWrap}>
-              <MaterialCommunityIcons name="food-drumstick-outline" size={16} color={Colors.primary} />
-            </View>
-            <Text style={styles.detailLabel}>Protein Target</Text>
-            <Text style={styles.detailValue}>{plan.proteinGrams}g</Text>
-          </View>
-          <View style={styles.detailDivider} />
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconWrap}>
-              <Ionicons name="scale-outline" size={16} color={Colors.primary} />
-            </View>
-            <Text style={styles.detailLabel}>Starting Weight</Text>
-            <Text style={styles.detailValue}>{profile.weightKg} kg</Text>
-          </View>
-          <View style={styles.detailDivider} />
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconWrap}>
-              <Ionicons name="body-outline" size={16} color={Colors.primary} />
-            </View>
-            <Text style={styles.detailLabel}>Experience</Text>
-            <Text style={styles.detailValue}>
-              {profile.experience === 'beginner' ? 'Beginner' : profile.experience === 'some' ? 'Intermediate' : 'Experienced'}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>{displayName}'s Progress</Text>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={[
-              styles.statValue,
-              weightChange < 0 && profile.goal === 'fat_loss' && styles.statPositive,
-              weightChange > 0 && profile.goal === 'muscle_gain' && styles.statPositive,
-            ]}>
+        <View style={styles.statsGrid}>
+          <View style={[styles.statCard, isGoalMet && styles.statCardPositive]}>
+            <Text style={[styles.statValue, isGoalMet && { color: Colors.success }]}>
               {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}
             </Text>
             <Text style={styles.statLabel}>kg change</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{avgAdherence}%</Text>
-            <Text style={styles.statLabel}>adherence</Text>
+            <Text style={styles.statLabel}>avg adherence</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{checkIns.length}</Text>
             <Text style={styles.statLabel}>check-ins</Text>
           </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Fitness Details</Text>
+        <View style={styles.detailsCard}>
+          {[
+            { icon: 'calendar-outline', label: 'Current Week', value: `Week ${weekNumber}` },
+            { icon: 'flame-outline', label: 'Daily Calories', value: `${plan.dailyCalories} kcal` },
+            { icon: 'barbell-outline', label: 'Protein Target', value: `${plan.proteinGrams}g` },
+            { icon: 'scale-outline', label: 'Starting Weight', value: `${profile.weightKg} kg` },
+            { icon: 'body-outline', label: 'Experience', value: profile.experience === 'beginner' ? 'Beginner' : profile.experience === 'some' ? 'Intermediate' : 'Advanced' },
+          ].map((row, i, arr) => (
+            <View key={row.label}>
+              <View style={styles.detailRow}>
+                <View style={styles.detailIconWrap}>
+                  <Ionicons name={row.icon as any} size={15} color={Colors.primary} />
+                </View>
+                <Text style={styles.detailLabel}>{row.label}</Text>
+                <Text style={styles.detailValue}>{row.value}</Text>
+              </View>
+              {i < arr.length - 1 && <View style={styles.detailDivider} />}
+            </View>
+          ))}
         </View>
 
         {weightData.length > 1 && (
@@ -281,13 +207,14 @@ export default function ProfileScreen() {
               <View style={styles.chart}>
                 {weightData.map((d, i) => {
                   const normalizedHeight = ((d.weight - minWeight) / weightRange) * 100;
+                  const isCurrent = i === weightData.length - 1;
                   return (
                     <View key={i} style={styles.chartBarContainer}>
                       <Text style={styles.chartBarValue}>{d.weight}</Text>
                       <View style={[
                         styles.chartBar,
-                        { height: Math.max(normalizedHeight, 10) },
-                        i === weightData.length - 1 && styles.chartBarCurrent,
+                        { height: Math.max(normalizedHeight, 8), backgroundColor: isCurrent ? Colors.primary : Colors.surface },
+                        isCurrent && styles.chartBarCurrent,
                       ]} />
                       <Text style={styles.chartBarLabel}>W{d.week}</Text>
                     </View>
@@ -301,15 +228,9 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>Check-in History</Text>
         {checkIns.length === 0 ? (
           <View style={styles.emptyCheckins}>
-            <Ionicons name="clipboard-outline" size={36} color={Colors.textMuted} />
+            <Ionicons name="clipboard-outline" size={32} color={Colors.textMuted} />
             <Text style={styles.emptyCheckinsText}>No check-ins yet</Text>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push('/check-in');
-              }}
-              style={styles.firstCheckInBtn}
-            >
+            <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/check-in'); }} style={styles.firstCheckInBtn}>
               <Text style={styles.firstCheckInText}>Submit First Check-in</Text>
             </Pressable>
           </View>
@@ -318,26 +239,22 @@ export default function ProfileScreen() {
             <View key={i} style={styles.checkInCard}>
               <View style={styles.checkInHeader}>
                 <Text style={styles.checkInWeek}>Week {c.weekNumber}</Text>
-                <Text style={styles.checkInDate}>
-                  {new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </Text>
+                <Text style={styles.checkInDate}>{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
               </View>
               <View style={styles.checkInStats}>
-                <View style={styles.checkInStat}>
-                  <Ionicons name="scale-outline" size={16} color={Colors.textMuted} />
-                  <Text style={styles.checkInStatText}>{c.weightKg} kg</Text>
-                </View>
-                <View style={styles.checkInStat}>
-                  <Ionicons name="checkmark-circle-outline" size={16} color={Colors.textMuted} />
-                  <Text style={styles.checkInStatText}>{c.adherencePercent}%</Text>
-                </View>
-                <View style={styles.checkInStat}>
-                  <Ionicons name="flash-outline" size={16} color={Colors.textMuted} />
-                  <Text style={styles.checkInStatText}>{c.energyLevel}</Text>
-                </View>
+                {[
+                  { icon: 'scale-outline', value: `${c.weightKg} kg` },
+                  { icon: 'checkmark-circle-outline', value: `${c.adherencePercent}%` },
+                  { icon: 'flash-outline', value: c.energyLevel },
+                ].map((s, si) => (
+                  <View key={si} style={styles.checkInStat}>
+                    <Ionicons name={s.icon as any} size={14} color={Colors.textMuted} />
+                    <Text style={styles.checkInStatText}>{s.value}</Text>
+                  </View>
+                ))}
                 {c.waistCm ? (
                   <View style={styles.checkInStat}>
-                    <MaterialCommunityIcons name="tape-measure" size={16} color={Colors.textMuted} />
+                    <MaterialCommunityIcons name="tape-measure" size={14} color={Colors.textMuted} />
                     <Text style={styles.checkInStatText}>{c.waistCm} cm</Text>
                   </View>
                 ) : null}
@@ -346,76 +263,41 @@ export default function ProfileScreen() {
           ))
         )}
 
-        <Pressable onPress={handleLogout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={18} color={Colors.error} />
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </Pressable>
+        <View style={styles.actionButtons}>
+          <Pressable onPress={handleReset} style={styles.resetButton}>
+            <Ionicons name="refresh-outline" size={16} color={Colors.textMuted} />
+            <Text style={styles.resetText}>Start Over</Text>
+          </Pressable>
+          <Pressable onPress={handleLogout} style={styles.logoutButton}>
+            <Ionicons name="log-out-outline" size={16} color={Colors.error} />
+            <Text style={styles.logoutText}>Sign Out</Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
-      <Modal
-        visible={showEditModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowEditModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
+      <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <Pressable style={styles.modalBackdrop} onPress={() => !saving && setShowEditModal(false)} />
           <View style={[styles.modalContent, { paddingBottom: Platform.OS === 'web' ? 34 : Math.max(insets.bottom, 20) }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               <Pressable onPress={() => !saving && setShowEditModal(false)}>
-                <Ionicons name="close" size={24} color={Colors.textSecondary} />
+                <Ionicons name="close" size={22} color={Colors.textSecondary} />
               </Pressable>
             </View>
-
             <Text style={styles.inputLabel}>Name</Text>
-            <TextInput
-              style={styles.input}
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="Your name"
-              placeholderTextColor={Colors.textMuted}
-              autoCapitalize="words"
-              editable={!saving}
-            />
-
+            <TextInput style={styles.input} value={editName} onChangeText={setEditName} placeholder="Your name" placeholderTextColor={Colors.textMuted} autoCapitalize="words" editable={!saving} />
             <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={editEmail}
-              onChangeText={setEditEmail}
-              placeholder="your@email.com"
-              placeholderTextColor={Colors.textMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!saving}
-            />
-
+            <TextInput style={styles.input} value={editEmail} onChangeText={setEditEmail} placeholder="your@email.com" placeholderTextColor={Colors.textMuted} keyboardType="email-address" autoCapitalize="none" editable={!saving} />
             {editError && (
               <View style={styles.editErrorRow}>
-                <Ionicons name="alert-circle" size={16} color={Colors.error} />
+                <Ionicons name="alert-circle" size={15} color={Colors.error} />
                 <Text style={styles.editErrorText}>{editError}</Text>
               </View>
             )}
-
-            <Pressable
-              onPress={handleSaveProfile}
-              disabled={saving}
-              style={({ pressed }) => [
-                styles.saveBtn,
-                pressed && styles.saveBtnPressed,
-                saving && styles.saveBtnDisabled,
-              ]}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color={Colors.black} />
-              ) : (
-                <Text style={styles.saveBtnText}>Save Changes</Text>
-              )}
+            <Pressable onPress={handleSaveProfile} disabled={saving} style={({ pressed }) => [styles.saveBtn, pressed && styles.saveBtnPressed, saving && styles.saveBtnDisabled]}>
+              {saving ? <ActivityIndicator size="small" color={Colors.black} /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -442,73 +324,135 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   editBtn: {
-    position: 'absolute' as const,
+    position: 'absolute',
     top: 0,
     right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
   },
-  avatar: {
+  avatarRing: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    padding: 2,
+    marginBottom: 14,
+  },
+  avatarGradient: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    padding: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInner: {
     width: 80,
     height: 80,
     borderRadius: 40,
+    backgroundColor: Colors.card,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
   },
   avatarText: {
-    fontSize: 28,
+    fontSize: 26,
     fontFamily: 'Rubik_700Bold',
-    color: '#052e16',
+    color: Colors.primary,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
+    letterSpacing: -0.3,
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
-    marginTop: 4,
+    marginTop: 3,
   },
   goalBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(74,222,128,0.12)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 20,
     marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.2)',
   },
   goalBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Rubik_500Medium',
     color: Colors.primary,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 8,
+    marginBottom: 28,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  statCardPositive: {
+    borderColor: 'rgba(16,185,129,0.3)',
+    backgroundColor: 'rgba(16,185,129,0.05)',
+  },
+  statValue: {
+    fontSize: 20,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.text,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    marginTop: 3,
+    textAlign: 'center',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.textSecondary,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   detailsCard: {
     marginHorizontal: 20,
     backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 4,
+    borderRadius: 18,
+    paddingVertical: 4,
     marginBottom: 28,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 13,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   detailIconWrap: {
     width: 30,
     height: 30,
-    borderRadius: 8,
+    borderRadius: 9,
     backgroundColor: 'rgba(74,222,128,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -521,108 +465,74 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
   },
   detailDivider: {
     height: 1,
     backgroundColor: Colors.border,
-    marginHorizontal: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 8,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.card,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontFamily: 'Rubik_700Bold',
-    color: Colors.text,
-  },
-  statPositive: {
-    color: Colors.success,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontFamily: 'Rubik_400Regular',
-    color: Colors.textMuted,
-    marginTop: 2,
+    marginHorizontal: 16,
   },
   chartCard: {
     marginHorizontal: 20,
     backgroundColor: Colors.card,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 20,
-    marginBottom: 24,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   chart: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-around',
-    height: 140,
+    height: 120,
   },
   chartBarContainer: {
     alignItems: 'center',
     flex: 1,
   },
   chartBarValue: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
     marginBottom: 4,
   },
   chartBar: {
-    width: 20,
-    borderRadius: 6,
-    backgroundColor: Colors.primaryLight,
-    opacity: 0.6,
+    width: 18,
+    borderRadius: 5,
+    backgroundColor: Colors.surface,
   },
   chartBarCurrent: {
     backgroundColor: Colors.primary,
-    opacity: 1,
   },
   chartBarLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
     marginTop: 4,
   },
   emptyCheckins: {
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: 28,
     gap: 8,
     marginBottom: 24,
   },
   emptyCheckinsText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
   },
   firstCheckInBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
     marginTop: 8,
   },
   firstCheckInText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.black,
   },
@@ -630,8 +540,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     backgroundColor: Colors.card,
     borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   checkInHeader: {
     flexDirection: 'row',
@@ -639,18 +551,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   checkInWeek: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
   },
   checkInDate: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
   checkInStats: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 14,
     flexWrap: 'wrap',
   },
   checkInStat: {
@@ -659,24 +571,48 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   checkInStatText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
   },
-  logoutButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  resetButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginHorizontal: 20,
+    gap: 6,
     backgroundColor: Colors.card,
-    borderRadius: 16,
-    paddingVertical: 16,
-    marginTop: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  resetText: {
+    fontSize: 14,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.textMuted,
+  },
+  logoutButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(239,68,68,0.06)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.15)',
   },
   logoutText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_500Medium',
     color: Colors.error,
   },
@@ -686,14 +622,17 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
   },
   modalContent: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.cardElevated,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 12,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: Colors.borderStrong,
   },
   modalHandle: {
     width: 36,
@@ -707,38 +646,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 20,
-    fontFamily: 'Rubik_700Bold',
+    fontSize: 17,
+    fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: 'Rubik_500Medium',
-    color: Colors.textSecondary,
-    marginBottom: 6,
-    textTransform: 'uppercase' as const,
+    color: Colors.textMuted,
+    marginBottom: 7,
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   input: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 15,
     fontFamily: 'Rubik_400Regular',
     color: Colors.text,
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: Colors.border,
+    marginBottom: 14,
   },
   editErrorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
   },
   editErrorText: {
     flex: 1,
@@ -749,20 +691,19 @@ const styles = StyleSheet.create({
   saveBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
   },
   saveBtnPressed: {
     opacity: 0.85,
-    transform: [{ scale: 0.98 }],
   },
   saveBtnDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   saveBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.black,
   },

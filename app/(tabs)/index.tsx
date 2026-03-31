@@ -8,13 +8,67 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import { useAuth } from '@/lib/auth-context';
+
+function CalorieRing({ progress, eaten, remaining, isOver }: {
+  progress: number;
+  eaten: number;
+  remaining: number;
+  isOver: boolean;
+}) {
+  const size = 140;
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clampedProgress = Math.min(1, Math.max(0, progress));
+  const strokeDashoffset = circumference * (1 - clampedProgress);
+  const strokeColor = isOver ? Colors.error : Colors.primary;
+
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} style={{ position: 'absolute' }}>
+        <Defs>
+          <SvgGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor={isOver ? Colors.error : Colors.primary} />
+            <Stop offset="100%" stopColor={isOver ? '#FF6B6B' : Colors.accent} />
+          </SvgGradient>
+        </Defs>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={Colors.surface}
+          strokeWidth={strokeWidth}
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+      <View style={{ alignItems: 'center' }}>
+        <Text style={[styles.ringValue, isOver && { color: Colors.error }]}>
+          {isOver ? '+' + (eaten - (eaten - remaining === 0 ? 0 : Math.abs(remaining))) : remaining}
+        </Text>
+        <Text style={styles.ringLabel}>{isOver ? 'over' : 'left'}</Text>
+      </View>
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -43,9 +97,7 @@ export default function HomeScreen() {
   const caloriesEaten = todayFoods.reduce((sum, f) => sum + f.calories, 0);
   const caloriesRemaining = Math.max(0, plan.dailyCalories - caloriesEaten);
   const calorieProgress = Math.min(1, caloriesEaten / plan.dailyCalories);
-
-  const workoutDays = plan.workouts.filter(w => !w.isRestDay).length;
-  const restDays = 7 - workoutDays;
+  const isOver = caloriesEaten > plan.dailyCalories;
 
   return (
     <ScrollView
@@ -73,40 +125,55 @@ export default function HomeScreen() {
           }}
           style={styles.checkInButton}
         >
-          <Ionicons name="clipboard" size={18} color={Colors.white} />
+          <Ionicons name="clipboard-outline" size={20} color={Colors.text} />
         </Pressable>
       </View>
 
-      <LinearGradient
-        colors={['#4ADE80', '#22C55E']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.calorieCard}
-      >
-        <View style={styles.calorieHeader}>
-          <Text style={styles.calorieTitle}>Daily Calories</Text>
-          <Text style={styles.calorieTarget}>{plan.dailyCalories} kcal target</Text>
-        </View>
-        <View style={styles.calorieBarContainer}>
-          <View style={styles.calorieBarBg}>
-            <View style={[styles.calorieBarFill, { width: `${calorieProgress * 100}%` }]} />
+      <View style={styles.calorieCard}>
+        <View style={styles.calorieCardRow}>
+          <CalorieRing
+            progress={calorieProgress}
+            eaten={caloriesEaten}
+            remaining={caloriesRemaining}
+            isOver={isOver}
+          />
+          <View style={styles.calorieMeta}>
+            <Text style={styles.calorieCardTitle}>Daily Calories</Text>
+            <View style={styles.calorieMetaItem}>
+              <View style={[styles.metaDot, { backgroundColor: Colors.primary }]} />
+              <View>
+                <Text style={styles.calorieMetaValue}>{caloriesEaten}</Text>
+                <Text style={styles.calorieMetaLabel}>eaten</Text>
+              </View>
+            </View>
+            <View style={styles.calorieMetaItem}>
+              <View style={[styles.metaDot, { backgroundColor: Colors.accent }]} />
+              <View>
+                <Text style={styles.calorieMetaValue}>{plan.dailyCalories}</Text>
+                <Text style={styles.calorieMetaLabel}>target</Text>
+              </View>
+            </View>
+            <View style={styles.calorieMetaItem}>
+              <View style={[styles.metaDot, { backgroundColor: Colors.violet }]} />
+              <View>
+                <Text style={styles.calorieMetaValue}>{plan.proteinGrams}g</Text>
+                <Text style={styles.calorieMetaLabel}>protein</Text>
+              </View>
+            </View>
           </View>
         </View>
-        <View style={styles.calorieStats}>
-          <View style={styles.calorieStat}>
-            <Text style={styles.calorieStatValue}>{caloriesEaten}</Text>
-            <Text style={styles.calorieStatLabel}>eaten</Text>
-          </View>
-          <View style={styles.calorieStat}>
-            <Text style={styles.calorieStatValue}>{caloriesRemaining}</Text>
-            <Text style={styles.calorieStatLabel}>remaining</Text>
-          </View>
-          <View style={styles.calorieStat}>
-            <Text style={styles.calorieStatValue}>{plan.proteinGrams}g</Text>
-            <Text style={styles.calorieStatLabel}>protein</Text>
-          </View>
+        <View style={styles.calorieBarBg}>
+          <View
+            style={[
+              styles.calorieBarFill,
+              {
+                width: `${calorieProgress * 100}%` as any,
+                backgroundColor: isOver ? Colors.error : Colors.primary,
+              },
+            ]}
+          />
         </View>
-      </LinearGradient>
+      </View>
 
       <Text style={styles.sectionTitle}>Today's Workout</Text>
       <Pressable
@@ -116,14 +183,19 @@ export default function HomeScreen() {
             router.push({ pathname: '/workout-detail', params: { dayIndex: String(dayIndex) } });
           }
         }}
-        style={({ pressed }) => [styles.todayCard, pressed && !todayWorkout.isRestDay && styles.pressed]}
+        style={({ pressed }) => [
+          styles.todayCard,
+          !todayWorkout.isRestDay && styles.todayCardActive,
+          pressed && !todayWorkout.isRestDay && styles.pressed,
+        ]}
       >
+        {!todayWorkout.isRestDay && <View style={styles.todayCardAccent} />}
         <View style={styles.todayCardContent}>
           <View style={[styles.dayBadge, todayWorkout.isRestDay && styles.restBadge]}>
             <Ionicons
-              name={todayWorkout.isRestDay ? 'bed' : 'barbell'}
+              name={todayWorkout.isRestDay ? 'bed-outline' : 'barbell-outline'}
               size={20}
-              color={todayWorkout.isRestDay ? Colors.secondary : Colors.primary}
+              color={todayWorkout.isRestDay ? Colors.textMuted : Colors.primary}
             />
           </View>
           <View style={styles.todayInfo}>
@@ -131,13 +203,14 @@ export default function HomeScreen() {
             <Text style={styles.todayTitle}>{todayWorkout.title}</Text>
             {!todayWorkout.isRestDay && (
               <Text style={styles.todayExCount}>
-                {todayWorkout.exercises.length} exercises
-                {todayWorkout.cardio ? ' + cardio' : ''}
+                {todayWorkout.exercises.length} exercises{todayWorkout.cardio ? ' + cardio' : ''}
               </Text>
             )}
           </View>
           {!todayWorkout.isRestDay && (
-            <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+            <View style={styles.arrowCircle}>
+              <Ionicons name="arrow-forward" size={16} color={Colors.primary} />
+            </View>
           )}
         </View>
       </Pressable>
@@ -146,6 +219,7 @@ export default function HomeScreen() {
       <View style={styles.weekGrid}>
         {plan.workouts.map((w, i) => {
           const isToday = i === dayIndex;
+          const isPast = i < dayIndex;
           return (
             <Pressable
               key={i}
@@ -158,16 +232,16 @@ export default function HomeScreen() {
               style={[
                 styles.weekDayCard,
                 isToday && styles.weekDayToday,
-                w.isRestDay && styles.weekDayRest,
+                w.isRestDay && !isToday && styles.weekDayRest,
               ]}
             >
-              <Text style={[styles.weekDayName, isToday && styles.weekDayNameToday]}>
+              <Text style={[styles.weekDayName, isToday && styles.weekDayNameToday, w.isRestDay && !isToday && styles.weekDayNameRest]}>
                 {w.dayName.slice(0, 3)}
               </Text>
               <Ionicons
-                name={w.isRestDay ? 'bed-outline' : 'barbell-outline'}
-                size={16}
-                color={isToday ? Colors.primary : w.isRestDay ? Colors.textMuted : Colors.textSecondary}
+                name={w.isRestDay ? 'bed-outline' : isPast ? 'checkmark-circle' : 'barbell-outline'}
+                size={15}
+                color={isToday ? Colors.primary : isPast && !w.isRestDay ? Colors.success : w.isRestDay ? Colors.textMuted : Colors.textSecondary}
               />
             </Pressable>
           );
@@ -178,7 +252,9 @@ export default function HomeScreen() {
         <>
           <Text style={styles.sectionTitle}>Coach Notes</Text>
           <View style={styles.notesCard}>
-            <MaterialCommunityIcons name="robot-happy" size={20} color={Colors.secondary} />
+            <View style={styles.notesIconWrap}>
+              <MaterialCommunityIcons name="robot-happy-outline" size={18} color={Colors.accent} />
+            </View>
             <Text style={styles.notesText}>{plan.explanation}</Text>
           </View>
         </>
@@ -186,7 +262,7 @@ export default function HomeScreen() {
 
       <View style={styles.disclaimerContainer}>
         <Text style={styles.disclaimerText}>
-          This app provides general fitness guidance only. Not medical advice. Results are not guaranteed. Consult a professional before starting any fitness program.
+          General fitness guidance only. Not medical advice. Consult a professional before starting any program.
         </Text>
       </View>
     </ScrollView>
@@ -209,9 +285,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   goalLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_500Medium',
     color: Colors.primary,
     marginTop: 2,
@@ -220,77 +297,112 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   calorieCard: {
     marginHorizontal: 20,
-    borderRadius: 20,
+    backgroundColor: Colors.card,
+    borderRadius: 24,
     padding: 20,
-    marginBottom: 24,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  calorieHeader: {
+  calorieCardRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  calorieTitle: {
-    fontSize: 18,
-    fontFamily: 'Rubik_600SemiBold',
-    color: '#052e16',
-  },
-  calorieTarget: {
-    fontSize: 13,
-    fontFamily: 'Rubik_400Regular',
-    color: 'rgba(0,0,0,0.6)',
-  },
-  calorieBarContainer: {
+    gap: 20,
     marginBottom: 16,
   },
-  calorieBarBg: {
+  calorieMeta: {
+    flex: 1,
+    gap: 10,
+  },
+  calorieCardTitle: {
+    fontSize: 13,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  calorieMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  metaDot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  calorieMetaValue: {
+    fontSize: 16,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.text,
+    lineHeight: 18,
+  },
+  calorieMetaLabel: {
+    fontSize: 11,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+  },
+  ringValue: {
+    fontSize: 22,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.text,
+    lineHeight: 24,
+  },
+  ringLabel: {
+    fontSize: 10,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  calorieBarBg: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.surface,
     overflow: 'hidden',
   },
   calorieBarFill: {
     height: '100%',
-    borderRadius: 4,
-    backgroundColor: '#052e16',
-  },
-  calorieStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  calorieStat: {
-    alignItems: 'center',
-  },
-  calorieStatValue: {
-    fontSize: 20,
-    fontFamily: 'Rubik_700Bold',
-    color: '#052e16',
-  },
-  calorieStatLabel: {
-    fontSize: 12,
-    fontFamily: 'Rubik_400Regular',
-    color: 'rgba(0,0,0,0.5)',
-    marginTop: 2,
+    borderRadius: 2,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
+    color: Colors.textSecondary,
     paddingHorizontal: 20,
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   todayCard: {
     marginHorizontal: 20,
     backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: 18,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  todayCardActive: {
+    borderColor: 'rgba(74,222,128,0.2)',
+  },
+  todayCardAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: Colors.primary,
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
   },
   pressed: {
     opacity: 0.8,
@@ -299,26 +411,30 @@ const styles = StyleSheet.create({
   todayCardContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 16,
+    paddingLeft: 20,
   },
   dayBadge: {
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: 'rgba(74,222,128,0.15)',
+    backgroundColor: 'rgba(74,222,128,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   restBadge: {
-    backgroundColor: 'rgba(13,148,136,0.15)',
+    backgroundColor: Colors.surface,
   },
   todayInfo: {
     flex: 1,
   },
   todayDayName: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   todayTitle: {
     fontSize: 16,
@@ -327,40 +443,54 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   todayExCount: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
     marginTop: 2,
   },
+  arrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   weekGrid: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    gap: 6,
-    marginBottom: 24,
+    gap: 5,
+    marginBottom: 28,
   },
   weekDayCard: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 11,
     borderRadius: 12,
     backgroundColor: Colors.card,
-    gap: 6,
+    gap: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   weekDayToday: {
-    backgroundColor: 'rgba(74,222,128,0.15)',
-    borderWidth: 1,
+    backgroundColor: 'rgba(74,222,128,0.1)',
     borderColor: Colors.primary,
   },
   weekDayRest: {
-    opacity: 0.6,
+    opacity: 0.45,
   },
   weekDayName: {
-    fontSize: 11,
-    fontFamily: 'Rubik_500Medium',
+    fontSize: 10,
+    fontFamily: 'Rubik_600SemiBold',
     color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
   },
   weekDayNameToday: {
     color: Colors.primary,
+  },
+  weekDayNameRest: {
+    color: Colors.textMuted,
   },
   notesCard: {
     marginHorizontal: 20,
@@ -370,10 +500,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.accent,
+  },
+  notesIconWrap: {
+    marginTop: 1,
   },
   notesText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
     lineHeight: 20,

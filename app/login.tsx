@@ -32,7 +32,6 @@ export default function LoginScreen() {
       setError('Please fill in all fields');
       return;
     }
-
     setError('');
     setLoading(true);
     try {
@@ -50,10 +49,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={{
@@ -64,19 +60,26 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.brandSection}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="fitness" size={40} color={Colors.primary} />
+          <View style={styles.logoRing}>
+            <LinearGradient
+              colors={['rgba(74,222,128,0.3)', 'rgba(0,212,255,0.1)']}
+              style={styles.logoRingGradient}
+            >
+              <View style={styles.logoInner}>
+                <Ionicons name="fitness" size={36} color={Colors.primary} />
+              </View>
+            </LinearGradient>
           </View>
           <Text style={styles.brandTitle}>FitCoach</Text>
           <Text style={styles.brandSubtitle}>Your adaptive fitness companion</Text>
         </View>
 
-        <View style={styles.form}>
-          <Text style={styles.formTitle}>Welcome back</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Welcome back</Text>
 
           {error ? (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={18} color={Colors.error} />
+              <Ionicons name="alert-circle" size={16} color={Colors.error} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
@@ -84,7 +87,7 @@ export default function LoginScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Email</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+              <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={email}
@@ -102,7 +105,7 @@ export default function LoginScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Password</Text>
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 value={password}
@@ -125,7 +128,7 @@ export default function LoginScreen() {
           <Pressable
             onPress={handleLogin}
             disabled={loading}
-            style={({ pressed }) => [styles.loginBtn, pressed && { opacity: 0.9 }, loading && { opacity: 0.6 }]}
+            style={({ pressed }) => [styles.loginBtn, pressed && { opacity: 0.85 }, loading && { opacity: 0.6 }]}
           >
             <LinearGradient
               colors={['#4ADE80', '#22C55E']}
@@ -160,65 +163,93 @@ const styles = StyleSheet.create({
   },
   brandSection: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 36,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: 'rgba(74,222,128,0.12)',
+  logoRing: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.25)',
+  },
+  logoRingGradient: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoInner: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: Colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   brandTitle: {
-    fontSize: 32,
+    fontSize: 30,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
+    letterSpacing: -0.5,
   },
   brandSubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
     marginTop: 4,
   },
-  form: {
-    paddingHorizontal: 24,
+  card: {
+    marginHorizontal: 20,
+    backgroundColor: Colors.card,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  formTitle: {
-    fontSize: 22,
+  cardTitle: {
+    fontSize: 20,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(239,68,68,0.1)',
+    backgroundColor: 'rgba(239,68,68,0.08)',
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
   },
   errorText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.error,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Rubik_500Medium',
-    color: Colors.textSecondary,
-    marginBottom: 8,
+    color: Colors.textMuted,
+    marginBottom: 7,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.surface,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -238,17 +269,17 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   loginBtn: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     marginTop: 8,
   },
   loginBtnGradient: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 15,
   },
   loginBtnText: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.black,
   },
@@ -256,15 +287,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 'auto',
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
   footerText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
   },
   footerLink: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.primary,
   },
