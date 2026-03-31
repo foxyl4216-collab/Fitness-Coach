@@ -1,0 +1,167 @@
+Act as a senior QA engineer, backend architect, and security auditor.
+
+Analyze the entire codebase of this fitness coaching app and identify all bugs, issues, and risks before production release.
+
+DO NOT rewrite the whole app.
+Find and fix issues systematically.
+
+----------------------------------
+STEP 1 — Codebase Scan
+----------------------------------
+
+Scan all files and identify:
+
+- Runtime errors
+- Undefined variables
+- Broken imports
+- Async/await issues
+- Unhandled promises
+- Memory leaks
+- Dead code
+- Duplicate logic
+
+Fix all issues.
+
+----------------------------------
+STEP 2 — API & Backend Validation
+----------------------------------
+
+Test all API routes:
+
+- /signup
+- /login
+- /profile
+- /diet
+- /workout
+- /calorie-log
+- /camera scan
+
+Check:
+
+- Proper request validation
+- Missing fields handling
+- Error responses
+- Status codes
+- Edge cases
+
+Fix all broken endpoints.
+
+----------------------------------
+STEP 3 — Supabase Integration Check
+----------------------------------
+
+Verify:
+
+- Auth token validation
+- User session handling
+- Row Level Security compatibility
+- Queries returning correct data
+- No unauthorized access possible
+
+Fix all security gaps.
+
+----------------------------------
+STEP 4 — AI System Validation
+----------------------------------
+
+Check all AI integrations:
+
+- GPT diet generator
+- Workout generator
+- Camera calorie detection
+
+Ensure:
+
+- JSON output always valid
+- Retry logic implemented
+- No crashes on invalid AI response
+- Safe fallback responses
+
+Fix all instability issues.
+
+----------------------------------
+STEP 5 — Data Validation Layer
+----------------------------------
+
+Ensure strict validation for:
+
+- weight > 0
+- calories >= 0
+- adherence 0–100
+- valid goal types
+- required fields present
+
+Add validation where missing.
+
+----------------------------------
+STEP 6 — Error Handling
+----------------------------------
+
+Ensure:
+
+- No server crashes
+- Try/catch in all async routes
+- Consistent error response format:
+
+{
+  success: false,
+  message: ""
+}
+
+Fix all missing error handling.
+
+----------------------------------
+STEP 7 — Performance Optimization
+----------------------------------
+
+Check:
+
+- Slow queries
+- Unnecessary API calls
+- Large payload responses
+- Missing indexes
+
+Optimize where needed.
+
+----------------------------------
+STEP 8 — Security Audit
+----------------------------------
+
+Check:
+
+- Rate limiting implemented
+- Input sanitization
+- No API key exposure
+- Secure environment variables
+- Helmet + CORS properly configured
+
+Fix vulnerabilities.
+
+----------------------------------
+STEP 9 — App Store Readiness
+----------------------------------
+
+Ensure compliance:
+
+- No medical claims
+- No guaranteed results
+- Proper disclaimers present
+- Safe wording in responses
+
+Flag risky text.
+
+----------------------------------
+STEP 10 — Final Output
+----------------------------------
+
+Provide:
+
+1. List of all bugs found
+2. Fixed code (only necessary parts)
+3. Security improvements made
+4. Performance improvements
+5. Remaining risks (if any)
+6. Checklist for production readiness
+
+Do not skip any step.
+Be strict and thorough.

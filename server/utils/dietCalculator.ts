@@ -3,7 +3,7 @@ export interface UserMacroInput {
   height: number;
   age: number;
   gender: string;
-  goal_type: "fat_loss" | "muscle_gain";
+  goal_type: "fat_loss" | "muscle_gain" | "reduce_belly_fat" | "glute_growth";
 }
 
 export interface MacroTargets {
@@ -22,7 +22,9 @@ export function calculateMacros(profile: UserMacroInput): MacroTargets {
   let protein: number;
   let fat: number;
 
-  if (goal_type === "fat_loss") {
+  const isFatLoss = goal_type === "fat_loss" || goal_type === "reduce_belly_fat";
+
+  if (isFatLoss) {
     calories = Math.round(maintenance * 0.8);
     protein = Math.round(weight * 2.0);
     fat = Math.round(weight * 0.8);

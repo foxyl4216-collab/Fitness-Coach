@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../config/supabase";
+import { supabase, getSupabaseClient } from "../config/supabase";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
@@ -28,20 +28,19 @@ router.post("/signup", async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
 
-    // Create free subscription for new user (non-blocking)
-    if (data.user?.id) {
+    // Create free subscription using user's own token (satisfies RLS auth.uid() = user_id)
+    if (data.user?.id && data.session?.access_token) {
       try {
-        await supabase
+        const userClient = getSupabaseClient(data.session.access_token);
+        await userClient
           .from("subscriptions")
           .insert({
             user_id: data.user.id,
             plan_type: "free",
             status: "active",
-          })
-          .select()
-          .single();
+          });
       } catch {
-        // Subscription creation is non-critical — user signup succeeds regardless
+        // Non-critical — user signup succeeds regardless
       }
     }
 

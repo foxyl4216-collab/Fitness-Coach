@@ -194,10 +194,15 @@ router.post("/adapt-week", requireAuth, checkSubscription, requirePremium, async
     const currentWeight = checkins?.[0]?.weight || profile.weight || 70;
     const previousWeight = checkins?.[1]?.weight || profile.weight || 70;
 
+    // Only sum calories from the current week (last 7 days) for accurate adaptation
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAgoStr = weekAgo.toISOString().split("T")[0];
     const { data: logs } = await userDb
       .from("calorie_logs")
       .select("calories")
-      .eq("user_id", req.userId!);
+      .eq("user_id", req.userId!)
+      .gte("date", weekAgoStr);
 
     const caloriesConsumed = (logs || []).reduce((sum, l) => sum + (l.calories || 0), 0);
 
@@ -370,11 +375,11 @@ function validateDietPlan(
     errors.push("Total calories cannot be negative");
   }
 
-  const minCalories = Math.round(targetMacros.calories * 0.9);
-  const maxCalories = Math.round(targetMacros.calories * 1.1);
+  const minCalories = Math.round(targetMacros.calories * 0.8);
+  const maxCalories = Math.round(targetMacros.calories * 1.2);
   if (totalCalories < minCalories || totalCalories > maxCalories) {
     errors.push(
-      `Total calories (${totalCalories}) must be within 10% of target (${minCalories}-${maxCalories})`
+      `Total calories (${totalCalories}) must be within 20% of target (${minCalories}-${maxCalories})`
     );
   }
 

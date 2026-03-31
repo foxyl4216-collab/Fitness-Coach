@@ -118,6 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const res = await apiRequest('POST', '/api/auth/login', { email, password });
     const data = await res.json();
+    if (!res.ok || !data.session || !data.user) {
+      throw new Error(data.error || 'Login failed. Please check your credentials.');
+    }
     await saveSession(
       { id: data.user.id, email: data.user.email },
       data.session.access_token,
@@ -128,7 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signup = useCallback(async (email: string, password: string) => {
     const res = await apiRequest('POST', '/api/auth/signup', { email, password });
     const data = await res.json();
-    if (data.session) {
+    if (!res.ok) {
+      throw new Error(data.error || 'Signup failed. Please try again.');
+    }
+    if (data.session && data.user) {
       await saveSession(
         { id: data.user.id, email: data.user.email },
         data.session.access_token,

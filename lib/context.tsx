@@ -199,26 +199,32 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
   };
 
   const addFoodEntry = async (entry: Omit<Storage.FoodEntry, 'id' | 'timestamp'>) => {
-    const fullEntry: Storage.FoodEntry = {
-      ...entry,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      timestamp: Date.now(),
-    };
-    await Storage.saveFoodEntry(fullEntry);
-    setFoodLog(prev => [...prev, fullEntry]);
+    // Default to a local ID; replaced with backend UUID if available
+    let entryId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
 
     if (isAuthenticated) {
       try {
-        await apiRequest('POST', '/api/calorie-log', {
-          date: entry.date,
+        const apiRes = await apiRequest('POST', '/api/calorie-log/manual', {
           food_name: entry.name,
           calories: entry.calories,
-          source: 'manual',
+          date: entry.date,
         });
+        const apiData = await apiRes.json();
+        if (apiData.log?.id) {
+          entryId = apiData.log.id; // Use Supabase UUID so deletion works
+        }
       } catch (e) {
         console.warn('Failed to sync food entry to backend:', e);
       }
     }
+
+    const fullEntry: Storage.FoodEntry = {
+      ...entry,
+      id: entryId,
+      timestamp: Date.now(),
+    };
+    await Storage.saveFoodEntry(fullEntry);
+    setFoodLog(prev => [...prev, fullEntry]);
   };
 
   const removeFoodEntry = async (id: string) => {
