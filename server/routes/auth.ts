@@ -86,24 +86,17 @@ router.post("/signup", async (req, res) => {
 
     // Ensure user_profiles row exists (trigger may or may not have created it)
     if (userId) {
-      console.log("Creating profile for userId:", userId);
       const adminOrAnon = supabaseAdmin || supabase;
       const { error: profileError } = await adminOrAnon
         .from("user_profiles")
         .insert({ user_id: userId })
         .select()
         .single();
-      if (profileError) {
-        console.warn("Profile insert result:", profileError.message, profileError.code);
-        // If FK violation, try verifying user exists via admin
-        if (supabaseAdmin && profileError.code === "23503") {
-          const { data: verifyUser } = await supabaseAdmin.auth.admin.getUserById(userId);
-          console.log("User verification:", verifyUser?.user?.id, verifyUser?.user?.email);
-        }
+      if (profileError && profileError.code !== "23505") {
+        console.warn("Profile creation note:", profileError.message, profileError.code);
       }
 
       // Create free subscription using service role (bypasses RLS user_id check)
-      console.log("Creating subscription for userId:", userId);
       if (supabaseAdmin) {
         const { error: subError } = await supabaseAdmin
           .from("subscriptions")

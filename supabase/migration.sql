@@ -18,6 +18,17 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   UNIQUE(user_id)
 );
 
+-- Fix FK to ensure it points to auth.users (not public.users)
+ALTER TABLE public.user_profiles
+  DROP CONSTRAINT IF EXISTS user_profiles_user_id_fkey;
+ALTER TABLE public.user_profiles
+  ADD CONSTRAINT user_profiles_user_id_fkey
+  FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+-- Remove any check constraint on focus_track (values are unrestricted)
+ALTER TABLE public.user_profiles
+  DROP CONSTRAINT IF EXISTS user_profiles_focus_track_check;
+
 -- TABLE: weekly_plans
 CREATE TABLE IF NOT EXISTS weekly_plans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

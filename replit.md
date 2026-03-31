@@ -113,6 +113,13 @@ All data routes require `Authorization: Bearer <token>` header.
 - `SUPABASE_ANON_KEY` - Supabase anon/public key (secret)
 - `SESSION_SECRET` - Session secret (secret)
 
+## Database Notes
+- `user_profiles.user_id` FK was fixed to explicitly point to `auth.users(id)` (was incorrectly resolving)
+- `user_profiles_focus_track_check` constraint was dropped (focus_track is unrestricted text)
+- `handle_new_user` trigger updated with `EXCEPTION WHEN OTHERS THEN RETURN new` so user creation never fails due to trigger errors
+- All backend routes now use `supabaseAdmin` (service role) for writes to bypass RLS; `req.supabaseClient` (user-scoped) for reads
+- Subscription route uses `supabaseAdmin` for all operations
+
 ## Subscription System
 - `subscriptions` table in Supabase: `plan_type` (free/monthly/yearly), `status` (active/expired), `start_date`, `end_date`
 - DB trigger `handle_new_user` creates a free subscription on every signup
