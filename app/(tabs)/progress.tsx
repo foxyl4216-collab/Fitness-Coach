@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import type { ComponentProps } from 'react';
 import {
   StyleSheet,
   Text,
@@ -14,12 +15,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import { useAuth } from '@/lib/auth-context';
 import { router } from 'expo-router';
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -180,17 +184,17 @@ export default function ProfileScreen() {
 
         <Text style={styles.sectionTitle}>Fitness Details</Text>
         <View style={styles.detailsCard}>
-          {[
+          {(([
             { icon: 'calendar-outline', label: 'Current Week', value: `Week ${weekNumber}` },
             { icon: 'flame-outline', label: 'Daily Calories', value: `${plan.dailyCalories} kcal` },
             { icon: 'barbell-outline', label: 'Protein Target', value: `${plan.proteinGrams}g` },
             { icon: 'scale-outline', label: 'Starting Weight', value: `${profile.weightKg} kg` },
             { icon: 'body-outline', label: 'Experience', value: profile.experience === 'beginner' ? 'Beginner' : profile.experience === 'some' ? 'Intermediate' : 'Advanced' },
-          ].map((row, i, arr) => (
+          ] as { icon: IoniconName; label: string; value: string }[])).map((row, i, arr) => (
             <View key={row.label}>
               <View style={styles.detailRow}>
                 <View style={styles.detailIconWrap}>
-                  <Ionicons name={row.icon as any} size={15} color={Colors.primary} />
+                  <Ionicons name={row.icon} size={15} color={Colors.primary} />
                 </View>
                 <Text style={styles.detailLabel}>{row.label}</Text>
                 <Text style={styles.detailValue}>{row.value}</Text>
@@ -242,13 +246,13 @@ export default function ProfileScreen() {
                 <Text style={styles.checkInDate}>{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
               </View>
               <View style={styles.checkInStats}>
-                {[
+                {(([
                   { icon: 'scale-outline', value: `${c.weightKg} kg` },
                   { icon: 'checkmark-circle-outline', value: `${c.adherencePercent}%` },
                   { icon: 'flash-outline', value: c.energyLevel },
-                ].map((s, si) => (
+                ] as { icon: IoniconName; value: string }[])).map((s, si) => (
                   <View key={si} style={styles.checkInStat}>
-                    <Ionicons name={s.icon as any} size={14} color={Colors.textMuted} />
+                    <Ionicons name={s.icon} size={14} color={Colors.textMuted} />
                     <Text style={styles.checkInStatText}>{s.value}</Text>
                   </View>
                 ))}

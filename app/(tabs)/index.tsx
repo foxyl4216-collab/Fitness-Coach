@@ -62,7 +62,7 @@ function CalorieRing({ progress, eaten, remaining, isOver }: {
       </Svg>
       <View style={{ alignItems: 'center' }}>
         <Text style={[styles.ringValue, isOver && { color: Colors.error }]}>
-          {isOver ? '+' + (eaten - (eaten - remaining === 0 ? 0 : Math.abs(remaining))) : remaining}
+          {isOver ? '+' + remaining : remaining}
         </Text>
         <Text style={styles.ringLabel}>{isOver ? 'over' : 'left'}</Text>
       </View>
@@ -134,7 +134,7 @@ export default function HomeScreen() {
           <CalorieRing
             progress={calorieProgress}
             eaten={caloriesEaten}
-            remaining={caloriesRemaining}
+            remaining={isOver ? caloriesEaten - plan.dailyCalories : caloriesRemaining}
             isOver={isOver}
           />
           <View style={styles.calorieMeta}>

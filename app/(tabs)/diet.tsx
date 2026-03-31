@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { ComponentProps } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,6 +18,8 @@ import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import { useSubscription } from '@/lib/subscription-context';
 
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
 const MEAL_ACCENTS: Record<string, string> = {
   'Breakfast': Colors.accent,
   'Mid-Morning Snack': Colors.amber,
@@ -26,7 +29,7 @@ const MEAL_ACCENTS: Record<string, string> = {
   'Bedtime Snack': Colors.violet,
 };
 
-const MEAL_ICONS: Record<string, string> = {
+const MEAL_ICONS: Record<string, IoniconName> = {
   'Breakfast': 'sunny-outline',
   'Mid-Morning Snack': 'cafe-outline',
   'Lunch': 'restaurant-outline',
@@ -63,7 +66,7 @@ function MealCard({ meal, index }: MealCardProps) {
       <View style={styles.mealCardInner}>
         <View style={styles.mealHeader}>
           <View style={[styles.mealIconContainer, { backgroundColor: accentColor + '18' }]}>
-            <Ionicons name={iconName as any} size={18} color={accentColor} />
+            <Ionicons name={iconName} size={18} color={accentColor} />
           </View>
           <View style={styles.mealHeaderInfo}>
             <Text style={styles.mealName}>{meal.meal}</Text>
