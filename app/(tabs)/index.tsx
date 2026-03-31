@@ -167,7 +167,7 @@ export default function HomeScreen() {
             style={[
               styles.calorieBarFill,
               {
-                width: `${calorieProgress * 100}%` as any,
+                width: `${Math.round(calorieProgress * 100)}%`,
                 backgroundColor: isOver ? Colors.error : Colors.primary,
               },
             ]}

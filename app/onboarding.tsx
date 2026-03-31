@@ -21,6 +21,12 @@ import type { UserProfile } from '@/lib/storage';
 
 type Step = 'goal' | 'details' | 'lifestyle';
 
+const STEP_LABELS: Record<Step, string> = {
+  goal: 'Goal',
+  details: 'Details',
+  lifestyle: 'Lifestyle',
+};
+
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const { setOnboarded } = useFitCoach();
@@ -47,33 +53,26 @@ export default function OnboardingScreen() {
   const goNext = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const nextIndex = currentIndex + 1;
-    if (nextIndex < steps.length) {
-      setStep(steps[nextIndex]);
-    }
+    if (nextIndex < steps.length) setStep(steps[nextIndex]);
   };
 
   const goBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const prevIndex = currentIndex - 1;
-    if (prevIndex >= 0) {
-      setStep(steps[prevIndex]);
-    }
+    if (prevIndex >= 0) setStep(steps[prevIndex]);
   };
 
   const handleFinish = async () => {
     setSaving(true);
     try {
       const profile: UserProfile = {
-        goal,
-        focusTrack,
+        goal, focusTrack,
         age: parseInt(age, 10) || 25,
         heightCm: parseInt(height, 10) || 170,
         weightKg: parseInt(weight, 10) || 70,
-        gender,
-        experience,
+        gender, experience,
         dietPreference: dietPref,
-        cuisine,
-        equipment,
+        cuisine, equipment,
         daysPerWeek: parseInt(daysPerWeek, 10) || 4,
         injuries,
       };
@@ -88,25 +87,16 @@ export default function OnboardingScreen() {
   };
 
   const OptionCard = ({
-    selected,
-    onPress,
-    icon,
-    title,
-    subtitle,
+    selected, onPress, icon, title, subtitle,
   }: {
-    selected: boolean;
-    onPress: () => void;
-    icon: React.ReactNode;
-    title: string;
-    subtitle?: string;
+    selected: boolean; onPress: () => void; icon: React.ReactNode; title: string; subtitle?: string;
   }) => (
     <Pressable
       onPress={onPress}
       style={[styles.optionCard, selected && styles.optionCardSelected]}
     >
-      <View style={[styles.optionIcon, selected && styles.optionIconSelected]}>
-        {icon}
-      </View>
+      {selected && <View style={styles.optionCardAccent} />}
+      <View style={[styles.optionIcon, selected && styles.optionIconSelected]}>{icon}</View>
       <View style={styles.optionText}>
         <Text style={[styles.optionTitle, selected && styles.optionTitleSelected]}>{title}</Text>
         {subtitle && <Text style={styles.optionSubtitle}>{subtitle}</Text>}
@@ -118,13 +108,9 @@ export default function OnboardingScreen() {
   );
 
   const SmallOption = ({
-    selected,
-    onPress,
-    label,
+    selected, onPress, label,
   }: {
-    selected: boolean;
-    onPress: () => void;
-    label: string;
+    selected: boolean; onPress: () => void; label: string;
   }) => (
     <Pressable
       onPress={onPress}
@@ -135,21 +121,27 @@ export default function OnboardingScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top + 16 }]}>
         <View style={styles.header}>
           {currentIndex > 0 ? (
             <Pressable onPress={goBack} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={22} color={Colors.text} />
+              <Ionicons name="arrow-back" size={20} color={Colors.text} />
             </Pressable>
           ) : (
             <View style={{ width: 40 }} />
           )}
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+            </View>
+            <View style={styles.stepPills}>
+              {steps.map((s, i) => (
+                <Text key={s} style={[styles.stepPillText, i <= currentIndex && styles.stepPillTextActive]}>
+                  {STEP_LABELS[s]}
+                </Text>
+              ))}
+            </View>
           </View>
           <View style={{ width: 40 }} />
         </View>
@@ -167,46 +159,47 @@ export default function OnboardingScreen() {
               <OptionCard
                 selected={goal === 'fat_loss' && focusTrack !== 'belly_fat'}
                 onPress={() => { setGoal('fat_loss'); setFocusTrack('none'); }}
-                icon={<Ionicons name="flame" size={24} color={goal === 'fat_loss' && focusTrack !== 'belly_fat' ? Colors.primary : Colors.textMuted} />}
+                icon={<Ionicons name="flame" size={22} color={goal === 'fat_loss' && focusTrack !== 'belly_fat' ? Colors.primary : Colors.textMuted} />}
                 title="Fat Loss"
                 subtitle="Lose body fat with structured training and a calorie deficit"
               />
               <OptionCard
                 selected={goal === 'muscle_gain' && focusTrack !== 'glute_gain'}
                 onPress={() => { setGoal('muscle_gain'); setFocusTrack('none'); }}
-                icon={<Ionicons name="barbell" size={24} color={goal === 'muscle_gain' && focusTrack !== 'glute_gain' ? Colors.primary : Colors.textMuted} />}
+                icon={<Ionicons name="barbell" size={22} color={goal === 'muscle_gain' && focusTrack !== 'glute_gain' ? Colors.primary : Colors.textMuted} />}
                 title="Muscle Gain"
                 subtitle="Build lean muscle with progressive overload and a calorie surplus"
               />
+
               {isPremium && (
                 <>
                   <OptionCard
                     selected={focusTrack === 'belly_fat'}
                     onPress={() => { setGoal('fat_loss'); setFocusTrack('belly_fat'); }}
-                    icon={<MaterialCommunityIcons name="stomach" size={24} color={focusTrack === 'belly_fat' ? Colors.primary : Colors.textMuted} />}
+                    icon={<MaterialCommunityIcons name="stomach" size={22} color={focusTrack === 'belly_fat' ? Colors.primary : Colors.textMuted} />}
                     title="Reduce Belly Fat"
                     subtitle="Fat loss with extra core work and activity circuits"
                   />
                   <OptionCard
                     selected={focusTrack === 'glute_gain'}
                     onPress={() => { setGoal('muscle_gain'); setFocusTrack('glute_gain'); }}
-                    icon={<MaterialCommunityIcons name="human-female-dance" size={24} color={focusTrack === 'glute_gain' ? Colors.primary : Colors.textMuted} />}
+                    icon={<MaterialCommunityIcons name="human-female-dance" size={22} color={focusTrack === 'glute_gain' ? Colors.primary : Colors.textMuted} />}
                     title="Glute Growth"
                     subtitle="Muscle gain with lower body emphasis and glute hypertrophy"
                   />
                 </>
               )}
-              
+
               {!isPremium && (
                 <View style={styles.premiumLock}>
-                  <Ionicons name="lock-closed" size={16} color={Colors.primary} />
+                  <Ionicons name="lock-closed" size={14} color={Colors.primary} />
                   <Text style={styles.premiumLockText}>Premium goals: Reduce Belly Fat, Glute Growth</Text>
                 </View>
               )}
 
               {focusTrack === 'belly_fat' && (
                 <View style={styles.disclaimer}>
-                  <Ionicons name="information-circle" size={16} color={Colors.warning} />
+                  <Ionicons name="information-circle" size={15} color={Colors.warning} />
                   <Text style={styles.disclaimerText}>
                     Spot fat reduction is not guaranteed. Overall fat loss naturally reduces belly fat.
                   </Text>
@@ -229,40 +222,22 @@ export default function OnboardingScreen() {
               <View style={styles.fieldRow}>
                 <View style={styles.fieldCol}>
                   <Text style={styles.fieldLabel}>Age</Text>
-                  <TextInput
-                    style={styles.fieldInput}
-                    value={age}
-                    onChangeText={setAge}
-                    keyboardType="number-pad"
-                    placeholderTextColor={Colors.textMuted}
-                  />
+                  <TextInput style={styles.fieldInput} value={age} onChangeText={setAge} keyboardType="number-pad" placeholderTextColor={Colors.textMuted} />
                 </View>
                 <View style={styles.fieldCol}>
                   <Text style={styles.fieldLabel}>Height (cm)</Text>
-                  <TextInput
-                    style={styles.fieldInput}
-                    value={height}
-                    onChangeText={setHeight}
-                    keyboardType="number-pad"
-                    placeholderTextColor={Colors.textMuted}
-                  />
+                  <TextInput style={styles.fieldInput} value={height} onChangeText={setHeight} keyboardType="number-pad" placeholderTextColor={Colors.textMuted} />
                 </View>
                 <View style={styles.fieldCol}>
                   <Text style={styles.fieldLabel}>Weight (kg)</Text>
-                  <TextInput
-                    style={styles.fieldInput}
-                    value={weight}
-                    onChangeText={setWeight}
-                    keyboardType="number-pad"
-                    placeholderTextColor={Colors.textMuted}
-                  />
+                  <TextInput style={styles.fieldInput} value={weight} onChangeText={setWeight} keyboardType="number-pad" placeholderTextColor={Colors.textMuted} />
                 </View>
               </View>
 
               <Text style={styles.fieldLabel}>Training Experience</Text>
               <View style={styles.optionRow}>
                 <SmallOption selected={experience === 'beginner'} onPress={() => setExperience('beginner')} label="Beginner" />
-                <SmallOption selected={experience === 'some'} onPress={() => setExperience('some')} label="Some" />
+                <SmallOption selected={experience === 'some'} onPress={() => setExperience('some')} label="Intermediate" />
                 <SmallOption selected={experience === 'experienced'} onPress={() => setExperience('experienced')} label="Advanced" />
               </View>
             </>
@@ -271,7 +246,7 @@ export default function OnboardingScreen() {
           {step === 'lifestyle' && (
             <>
               <Text style={styles.stepTitle}>Lifestyle</Text>
-              <Text style={styles.stepSubtitle}>Almost done - just a few more details</Text>
+              <Text style={styles.stepSubtitle}>Almost done — a few more details</Text>
 
               <Text style={styles.fieldLabel}>Diet Preference</Text>
               <View style={styles.optionRow}>
@@ -286,7 +261,7 @@ export default function OnboardingScreen() {
                 <SmallOption selected={cuisine === 'american'} onPress={() => setCuisine('american')} label="American" />
                 <SmallOption selected={cuisine === 'mediterranean'} onPress={() => setCuisine('mediterranean')} label="Mediterranean" />
               </View>
-              <View style={styles.optionRow}>
+              <View style={[styles.optionRow, { marginTop: 6 }]}>
                 <SmallOption selected={cuisine === 'asian'} onPress={() => setCuisine('asian')} label="Asian" />
                 <SmallOption selected={cuisine === 'mexican'} onPress={() => setCuisine('mexican')} label="Mexican" />
                 <SmallOption selected={cuisine === 'global'} onPress={() => setCuisine('global')} label="Global Mix" />
@@ -308,7 +283,7 @@ export default function OnboardingScreen() {
 
               <Text style={styles.fieldLabel}>Injuries or Limitations (optional)</Text>
               <TextInput
-                style={[styles.fieldInput, { minHeight: 60 }]}
+                style={[styles.fieldInput, { minHeight: 60, paddingTop: 12 }]}
                 value={injuries}
                 onChangeText={setInjuries}
                 placeholder="e.g. lower back pain, knee issues..."
@@ -326,14 +301,9 @@ export default function OnboardingScreen() {
               disabled={saving}
               style={({ pressed }) => [styles.nextBtn, pressed && { opacity: 0.9 }, saving && { opacity: 0.5 }]}
             >
-              <LinearGradient
-                colors={['#4ADE80', '#22C55E']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.nextBtnGradient}
-              >
-                <Text style={[styles.nextBtnText, { color: Colors.black }]}>{saving ? 'Creating Plan...' : 'Generate My Plan'}</Text>
-                {!saving && <Ionicons name="arrow-forward" size={20} color={Colors.black} />}
+              <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtnGradient}>
+                <Text style={styles.nextBtnText}>{saving ? 'Creating Plan...' : 'Generate My Plan'}</Text>
+                {!saving && <Ionicons name="sparkles" size={18} color={Colors.black} />}
               </LinearGradient>
             </Pressable>
           ) : (
@@ -341,14 +311,9 @@ export default function OnboardingScreen() {
               onPress={goNext}
               style={({ pressed }) => [styles.nextBtn, pressed && { opacity: 0.9 }]}
             >
-              <LinearGradient
-                colors={['#4ADE80', '#22C55E']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.nextBtnGradient}
-              >
-                <Text style={[styles.nextBtnText, { color: Colors.black }]}>Continue</Text>
-                <Ionicons name="arrow-forward" size={20} color={Colors.black} />
+              <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.nextBtnGradient}>
+                <Text style={styles.nextBtnText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={18} color={Colors.black} />
               </LinearGradient>
             </Pressable>
           )}
@@ -373,12 +338,19 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  progressBar: {
+  progressContainer: {
     flex: 1,
-    height: 4,
+    gap: 6,
+  },
+  progressBar: {
+    height: 3,
     borderRadius: 2,
     backgroundColor: Colors.surface,
     overflow: 'hidden',
@@ -388,21 +360,36 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: 2,
   },
+  stepPills: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  stepPillText: {
+    fontSize: 10,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  stepPillTextActive: {
+    color: Colors.primary,
+  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 100,
   },
   stepTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
     marginBottom: 6,
+    letterSpacing: -0.3,
   },
   stepSubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
-    marginBottom: 28,
+    marginBottom: 24,
   },
   optionCard: {
     flexDirection: 'row',
@@ -410,31 +397,40 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
   },
   optionCardSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(74,222,128,0.08)',
+    borderColor: 'rgba(74,222,128,0.4)',
+    backgroundColor: 'rgba(74,222,128,0.06)',
+  },
+  optionCardAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: Colors.primary,
   },
   optionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 13,
     backgroundColor: Colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   optionIconSelected: {
-    backgroundColor: 'rgba(74,222,128,0.15)',
+    backgroundColor: 'rgba(74,222,128,0.12)',
   },
   optionText: {
     flex: 1,
   },
   optionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
   },
@@ -442,15 +438,16 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   optionSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textSecondary,
     marginTop: 2,
+    lineHeight: 17,
   },
   optionRadio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: Colors.textMuted,
     justifyContent: 'center',
@@ -461,52 +458,56 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   optionRadioDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: Colors.primary,
   },
   disclaimer: {
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: 'rgba(245,158,11,0.1)',
+    backgroundColor: 'rgba(245,158,11,0.08)',
     borderRadius: 12,
     padding: 12,
     marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.2)',
   },
   disclaimerText: {
     flex: 1,
     fontSize: 12,
     fontFamily: 'Rubik_400Regular',
     color: Colors.warning,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   fieldLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Rubik_500Medium',
-    color: Colors.textSecondary,
+    color: Colors.textMuted,
     marginBottom: 8,
     marginTop: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   optionRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 7,
     flexWrap: 'wrap',
   },
   smallOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: 10,
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   smallOptionSelected: {
-    backgroundColor: 'rgba(74,222,128,0.12)',
+    backgroundColor: 'rgba(74,222,128,0.1)',
     borderColor: Colors.primary,
   },
   smallOptionText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
   },
@@ -535,6 +536,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     backgroundColor: Colors.background,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
   nextBtn: {
     borderRadius: 16,
@@ -544,13 +547,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 15,
     gap: 8,
   },
   nextBtnText: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: 'Rubik_600SemiBold',
-    color: Colors.white,
+    color: Colors.black,
   },
   premiumLock: {
     flexDirection: 'row',
@@ -558,13 +561,15 @@ const styles = StyleSheet.create({
     gap: 10,
     backgroundColor: Colors.card,
     borderRadius: 12,
-    padding: 14,
-    marginTop: 12,
+    padding: 12,
+    marginTop: 10,
     borderLeftWidth: 3,
     borderLeftColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   premiumLockText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
     flex: 1,
