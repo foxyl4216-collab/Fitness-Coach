@@ -3,7 +3,8 @@ import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
 import { checkSubscription, requirePremium } from "../middleware/checkSubscription";
 import { getSupabaseClient } from "../config/supabase";
 import { uploadImage } from "../middleware/upload";
-import { analyzeFoodImage } from "../services/foodVisionAI";
+import { routeAI } from "../services/aiRouter";
+import { aiRateLimit } from "../middleware/aiRateLimit";
 
 const router = Router();
 
@@ -130,7 +131,7 @@ router.post("/camera", requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-router.post("/scan", requireAuth, checkSubscription, requirePremium, async (req: AuthenticatedRequest, res) => {
+router.post("/scan", requireAuth, checkSubscription, requirePremium, aiRateLimit("camera_food", 10), async (req: AuthenticatedRequest, res) => {
     try {
       console.log("📸 Route hit: /api/calorie-log/scan");
       
@@ -171,7 +172,7 @@ router.post("/scan", requireAuth, checkSubscription, requirePremium, async (req:
       try {
         const imageBuffer = Buffer.from(image_base64, "base64");
         const mimeType = mime_type || "image/jpeg";
-        analysis = await analyzeFoodImage(imageBuffer, mimeType);
+        analysis = await routeAI("camera_food", { imageBuffer, mimeType }) as any;
         console.log("📸 AI RESULT:", JSON.stringify(analysis, null, 2));
       } catch (aiErr: any) {
         console.error("📸 AI analysis failed:", aiErr.message);

@@ -1,0 +1,140 @@
+Now implement a hybrid AI architecture using OpenAI and Google Gemini.
+
+Do NOT modify frontend.
+Extend backend only.
+
+Tech:
+Node.js + Express + Supabase + OpenAI + Gemini API
+
+----------------------------------
+STEP 1 — Install Dependencies
+----------------------------------
+
+openai
+@google/generative-ai
+dotenv
+
+----------------------------------
+STEP 2 — Environment Variables
+----------------------------------
+
+Add:
+
+OPENAI_API_KEY= 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
+GEMINI_API_KEY= AIzaSyAMT2ncVPrI-Dw3nz3p1jbFv5sH0KMCDPY
+
+----------------------------------
+STEP 3 — Create AI Router
+----------------------------------
+
+Create:
+
+/services/aiRouter.js
+
+Function:
+
+routeAI(taskType, payload)
+
+Logic:
+
+IF taskType = "diet" → use OpenAI
+IF taskType = "workout" → use OpenAI
+IF taskType = "adaptation" → use OpenAI
+IF taskType = "camera_food" → use Gemini
+
+Return response from correct AI.
+
+----------------------------------
+STEP 4 — OpenAI Service
+----------------------------------
+
+Create:
+
+/services/openaiService.js
+
+Functions:
+
+generateDiet()
+generateWorkout()
+generateAdaptation()
+
+Requirements:
+
+- JSON output only
+- Retry if invalid JSON
+- Handle API errors
+
+----------------------------------
+STEP 5 — Gemini Service
+----------------------------------
+
+Create:
+
+/services/geminiService.js
+
+Function:
+
+analyzeFoodImage(imageBuffer)
+
+Use Gemini Vision model.
+
+Return:
+
+- food items
+- estimated calories
+- confidence score
+
+----------------------------------
+STEP 6 — Fallback Logic
+----------------------------------
+
+If OpenAI fails:
+→ retry once
+→ fallback to Gemini
+
+If Gemini fails:
+→ return safe error message
+
+----------------------------------
+STEP 7 — Validation Layer
+----------------------------------
+
+Before saving:
+
+- Ensure JSON valid
+- Ensure calories > 0
+- Ensure required fields exist
+- Reject bad AI outputs
+
+----------------------------------
+STEP 8 — Rate Limiting
+----------------------------------
+
+Add limits:
+
+- Diet/workout generation: 5/day
+- Camera scans: 10/day
+
+----------------------------------
+STEP 9 — Logging System
+----------------------------------
+
+Log:
+
+- AI used
+- response time
+- errors
+
+----------------------------------
+STEP 10 — Output
+----------------------------------
+
+Provide:
+
+1. Full code for both AI services
+2. Router logic
+3. API integration
+4. Error handling
+5. Setup instructions
+
+Production ready system.

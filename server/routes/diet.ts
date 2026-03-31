@@ -5,10 +5,13 @@ import { supabase, getSupabaseClient } from "../config/supabase";
 import { calculateMacros, type UserMacroInput } from "../utils/dietCalculator";
 import { generateDietPlan } from "../services/dietAI";
 import { adaptWeeklyDiet, type WeeklyProgress } from "../services/adaptation";
+import { routeAI } from "../services/aiRouter";
+import { aiRateLimit } from "../middleware/aiRateLimit";
+import type { GeneratedDietPlan } from "../services/dietAI";
 
 const router = Router();
 
-router.post("/generate", requireAuth, checkSubscription, requirePremium, async (req: AuthenticatedRequest, res) => {
+router.post("/generate", requireAuth, checkSubscription, requirePremium, aiRateLimit("diet", 5), async (req: AuthenticatedRequest, res) => {
   try {
     const userDb = req.supabaseClient || getSupabaseClient();
 
@@ -63,7 +66,7 @@ router.post("/generate", requireAuth, checkSubscription, requirePremium, async (
 
     const preference = profile.diet_preference || "standard";
     const cuisine = profile.cuisine || req.body.cuisine || "indian";
-    const dietPlan = await generateDietPlan(macros, preference, goalType, cuisine);
+    const dietPlan = await routeAI("diet", { macros, preference, goal: goalType, cuisine }) as GeneratedDietPlan;
 
     const validationErrors = validateDietPlan(dietPlan, macros, macroInput.weight);
     if (validationErrors.length > 0) {
@@ -135,7 +138,7 @@ router.post("/generate", requireAuth, checkSubscription, requirePremium, async (
   }
 });
 
-router.post("/adapt-week", requireAuth, checkSubscription, requirePremium, async (req: AuthenticatedRequest, res) => {
+router.post("/adapt-week", requireAuth, checkSubscription, requirePremium, aiRateLimit("diet", 5), async (req: AuthenticatedRequest, res) => {
   try {
     const userDb = req.supabaseClient || getSupabaseClient();
 
@@ -227,7 +230,7 @@ router.post("/adapt-week", requireAuth, checkSubscription, requirePremium, async
 
     const preference = profile.diet_preference || "standard";
     const cuisine = profile.cuisine || req.body.cuisine || "indian";
-    const newDietPlan = await generateDietPlan(adaptation.adjusted_macros, preference, goalType, cuisine);
+    const newDietPlan = await routeAI("diet", { macros: adaptation.adjusted_macros, preference, goal: goalType, cuisine }) as GeneratedDietPlan;
 
     const validationErrors = validateDietPlan(newDietPlan, adaptation.adjusted_macros, currentWeight);
     if (validationErrors.length > 0) {
