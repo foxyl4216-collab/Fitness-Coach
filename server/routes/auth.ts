@@ -35,7 +35,7 @@ router.post("/signup", async (req, res) => {
 
       if (adminError) {
         // Admin create failed — fall back to regular signUp
-        console.warn("Admin createUser failed, falling back to signUp:", adminError.message);
+        console.error("Admin createUser failed:", JSON.stringify({ message: adminError.message, status: (adminError as any).status, code: (adminError as any).code }));
       } else {
         userId = adminData.user?.id;
         userEmail = adminData.user?.email;
@@ -68,7 +68,10 @@ router.post("/signup", async (req, res) => {
     } else {
       // No admin client — use regular signUp
       const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) return res.status(400).json({ error: error.message });
+      if (error) {
+        console.error("signUp failed:", JSON.stringify({ message: error.message, status: (error as any).status, code: (error as any).code }));
+        return res.status(400).json({ error: error.message });
+      }
 
       userId = data.user?.id;
       userEmail = data.user?.email;
