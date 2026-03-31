@@ -110,99 +110,101 @@ export default function CheckInScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.weekBadge}>
-            <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
-            <Text style={styles.weekBadgeText}>Week {weekNumber}</Text>
-          </View>
-          <Text style={styles.title}>How did it go?</Text>
-          <Text style={styles.subtitle}>Track your progress so we can adapt your plan</Text>
+          <View style={styles.formCard}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.weekBadge}>
+                <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                <Text style={styles.weekBadgeText}>Week {weekNumber}</Text>
+              </View>
+            </View>
+            <Text style={styles.title}>How did it go?</Text>
+            <Text style={styles.subtitle}>Track your progress so we can adapt your plan</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Current Weight</Text>
-            <View style={styles.largeInputWrapper}>
-              <TextInput
-                style={styles.largeNumInput}
-                value={weight}
-                onChangeText={setWeight}
-                placeholder="0.0"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="decimal-pad"
-                textAlign="center"
-              />
-              <Text style={styles.largeInputUnit}>kg</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Current Weight</Text>
+              <View style={styles.largeInputWrapper}>
+                <TextInput
+                  style={styles.largeNumInput}
+                  value={weight}
+                  onChangeText={setWeight}
+                  placeholder="0.0"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="decimal-pad"
+                  textAlign="center"
+                />
+                <Text style={styles.largeInputUnit}>kg</Text>
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <View style={styles.labelRow}>
-              <Text style={styles.inputLabel}>Plan Adherence</Text>
-              <Text style={styles.adherenceValue}>{adherence}%</Text>
+            <View style={styles.inputGroup}>
+              <View style={styles.labelRow}>
+                <Text style={styles.inputLabel}>Plan Adherence</Text>
+                <Text style={styles.adherenceValue}>{adherence}%</Text>
+              </View>
+              <View style={styles.adherenceBarBg}>
+                <View style={[styles.adherenceBarFill, { width: `${adherenceVal}%` }]} />
+              </View>
+              <View style={styles.adherenceButtons}>
+                {['40', '60', '80', '90', '100'].map(val => (
+                  <Pressable
+                    key={val}
+                    onPress={() => { setAdherence(val); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                    style={[styles.adherenceBtn, adherence === val && styles.adherenceBtnActive]}
+                  >
+                    <Text style={[styles.adherenceBtnText, adherence === val && styles.adherenceBtnTextActive]}>{val}%</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-            <View style={styles.adherenceBarBg}>
-              <View style={[styles.adherenceBarFill, { width: `${adherenceVal}%` }]} />
-            </View>
-            <View style={styles.adherenceButtons}>
-              {['40', '60', '80', '90', '100'].map(val => (
-                <Pressable
-                  key={val}
-                  onPress={() => { setAdherence(val); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                  style={[styles.adherenceBtn, adherence === val && styles.adherenceBtnActive]}
-                >
-                  <Text style={[styles.adherenceBtnText, adherence === val && styles.adherenceBtnTextActive]}>{val}%</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Energy Level</Text>
-            <View style={styles.energyRow}>
-              {([
-                { key: 'low' as const, label: 'Low', icon: 'battery-dead-outline' as const },
-                { key: 'normal' as const, label: 'Normal', icon: 'battery-half-outline' as const },
-                { key: 'high' as const, label: 'High', icon: 'battery-full-outline' as const },
-              ]).map(opt => (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => { setEnergy(opt.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                  style={[styles.energyOption, energy === opt.key && styles.energyOptionActive]}
-                >
-                  <Ionicons name={opt.icon} size={20} color={energy === opt.key ? Colors.primary : Colors.textMuted} />
-                  <Text style={[styles.energyText, energy === opt.key && styles.energyTextActive]}>{opt.label}</Text>
-                </Pressable>
-              ))}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Energy Level</Text>
+              <View style={styles.energyRow}>
+                {([
+                  { key: 'low' as const, label: 'Low', icon: 'battery-dead-outline' as const },
+                  { key: 'normal' as const, label: 'Normal', icon: 'battery-half-outline' as const },
+                  { key: 'high' as const, label: 'High', icon: 'battery-full-outline' as const },
+                ]).map(opt => (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => { setEnergy(opt.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                    style={[styles.energyOption, energy === opt.key && styles.energyOptionActive]}
+                  >
+                    <Ionicons name={opt.icon} size={20} color={energy === opt.key ? Colors.primary : Colors.textMuted} />
+                    <Text style={[styles.energyText, energy === opt.key && styles.energyTextActive]}>{opt.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-          </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Waist Measurement <Text style={styles.optionalTag}>(optional)</Text></Text>
-            <View style={styles.largeInputWrapper}>
-              <TextInput
-                style={styles.largeNumInput}
-                value={waist}
-                onChangeText={setWaist}
-                placeholder="0"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="decimal-pad"
-                textAlign="center"
-              />
-              <Text style={styles.largeInputUnit}>cm</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Waist Measurement <Text style={styles.optionalTag}>(optional)</Text></Text>
+              <View style={styles.largeInputWrapper}>
+                <TextInput
+                  style={styles.largeNumInput}
+                  value={waist}
+                  onChangeText={setWaist}
+                  placeholder="0"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="decimal-pad"
+                  textAlign="center"
+                />
+                <Text style={styles.largeInputUnit}>cm</Text>
+              </View>
             </View>
+
+            <Pressable
+              onPress={handleSubmit}
+              disabled={submitting}
+              style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.9 }, submitting && { opacity: 0.5 }]}
+            >
+              <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitBtnGradient}>
+                <Text style={styles.submitBtnText}>{submitting ? 'Updating Plan...' : 'Submit Check-in'}</Text>
+                {!submitting && <Ionicons name="arrow-forward" size={18} color={Colors.black} />}
+              </LinearGradient>
+            </Pressable>
           </View>
         </ScrollView>
-
-        <View style={[styles.footer, { paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 16 }]}>
-          <Pressable
-            onPress={handleSubmit}
-            disabled={submitting}
-            style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.9 }, submitting && { opacity: 0.5 }]}
-          >
-            <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitBtnGradient}>
-              <Text style={styles.submitBtnText}>{submitting ? 'Updating Plan...' : 'Submit Check-in'}</Text>
-              {!submitting && <Ionicons name="arrow-forward" size={18} color={Colors.black} />}
-            </LinearGradient>
-          </Pressable>
-        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -237,8 +239,19 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 40,
+  },
+  formCard: {
+    backgroundColor: Colors.cardElevated,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+    padding: 20,
+    marginTop: 8,
+  },
+  cardHeaderRow: {
+    marginBottom: 12,
   },
   weekBadge: {
     flexDirection: 'row',

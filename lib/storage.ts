@@ -68,6 +68,7 @@ export interface FoodEntry {
   protein?: number;
   date: string;
   timestamp: number;
+  source?: string;
 }
 
 export interface SavedFood {
