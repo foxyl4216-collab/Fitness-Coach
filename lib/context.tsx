@@ -73,7 +73,7 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
               heightCm: data.profile.height || 170,
               weightKg: data.profile.weight || 70,
               gender: 'male',
-              experience: data.profile.experience_level || 'beginner',
+              experience: (data.profile.experience_level === 'intermediate' ? 'some' : data.profile.experience_level === 'advanced' ? 'experienced' : 'beginner') as 'beginner' | 'some' | 'experienced',
               dietPreference: data.profile.diet_preference || 'anything',
               cuisine: data.profile.cuisine || 'indian',
               equipment: data.profile.equipment_access || 'basic',
@@ -157,7 +157,7 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
         weight: prof.weightKg,
         goal_type,
         focus_track: prof.focusTrack,
-        experience_level: prof.experience,
+        experience_level: prof.experience === 'some' ? 'intermediate' : prof.experience === 'experienced' ? 'advanced' : 'beginner',
         diet_preference: prof.dietPreference === 'anything' ? 'standard' : prof.dietPreference,
         equipment_access: prof.equipment === 'basic' ? 'minimal' : prof.equipment,
         weekly_availability: prof.daysPerWeek,
@@ -291,7 +291,7 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
         diet_preference: profile.dietPreference,
         cuisine: profile.cuisine || 'indian',
         focus_track: profile.focusTrack,
-        experience_level: profile.experience,
+        experience_level: profile.experience === 'some' ? 'intermediate' : profile.experience === 'experienced' ? 'advanced' : 'beginner',
       } : undefined;
       const res = await apiRequest('POST', '/api/diet-plan/generate', { profile: profilePayload, cuisine: profile?.cuisine || 'indian' });
       const data = await res.json();
