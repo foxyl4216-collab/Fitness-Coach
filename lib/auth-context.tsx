@@ -84,15 +84,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           try {
             const baseUrl = getBaseUrl();
-            const res = await fetch(baseUrl + '/api/auth/me', {
-              headers: { Authorization: `Bearer ${storedToken}` },
-            });
-            if (!res.ok && storedRefresh) {
-              const refreshRes = await fetch(baseUrl + '/api/auth/refresh', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh_token: storedRefresh }),
+            const meController = new AbortController();
+            const meTimer = setTimeout(() => meController.abort(), 5000);
+            let res: Response;
+            try {
+              res = await fetch(baseUrl + '/api/auth/me', {
+                headers: { Authorization: `Bearer ${storedToken}` },
+                signal: meController.signal,
               });
+            } finally {
+              clearTimeout(meTimer);
+            }
+            if (!res.ok && storedRefresh) {
+              const refreshController = new AbortController();
+              const refreshTimer = setTimeout(() => refreshController.abort(), 5000);
+              let refreshRes: Response;
+              try {
+                refreshRes = await fetch(baseUrl + '/api/auth/refresh', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ refresh_token: storedRefresh }),
+                  signal: refreshController.signal,
+                });
+              } finally {
+                clearTimeout(refreshTimer);
+              }
               if (refreshRes.ok) {
                 const refreshData = await refreshRes.json();
                 await saveSession(userData, refreshData.session.access_token, refreshData.session.refresh_token);
@@ -103,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               await clearSession();
             }
           } catch {
-            // offline - keep stored session
+            // offline or timeout - keep stored session
           }
         }
       } catch (e) {
