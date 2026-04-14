@@ -21,23 +21,42 @@ async function pingServer(): Promise<boolean> {
 }
 
 export function useNetworkStatus(): NetworkStatus {
-  const [status, setStatus] = useState<NetworkStatus>('unknown');
+  const getInitialStatus = (): NetworkStatus => {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
+      return navigator.onLine ? 'online' : 'offline';
+    }
+    return 'unknown';
+  };
+
+  const [status, setStatus] = useState<NetworkStatus>(getInitialStatus);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const check = useCallback(async () => {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
+      setStatus(navigator.onLine ? 'online' : 'offline');
+      return;
+    }
     const online = await pingServer();
     setStatus(online ? 'online' : 'offline');
   }, []);
 
   useEffect(() => {
-    check();
+    if (Platform.OS === 'web') {
+      const handleOnline = () => setStatus('online');
+      const handleOffline = () => setStatus('offline');
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
 
+    check();
     timerRef.current = setInterval(check, CHECK_INTERVAL_MS);
 
     const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
-      if (nextState === 'active') {
-        check();
-      }
+      if (nextState === 'active') check();
     });
 
     return () => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View, Platform } from 'react-native';
+import { Animated, StyleSheet, Text, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
@@ -19,11 +19,11 @@ export function OfflineBanner() {
 
     Animated.spring(slideY, {
       toValue: isOffline ? 0 : -60,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
       tension: 80,
       friction: 10,
     }).start();
-  }, [isOffline]);
+  }, [isOffline, status]);
 
   if (status === 'unknown') return null;
 
