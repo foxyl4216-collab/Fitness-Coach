@@ -1,0 +1,116 @@
+Act as a senior mobile app QA engineer, performance engineer, and production auditor.
+
+Analyze the entire project and ensure it meets production-level quality for App Store and Play Store release.
+
+Do NOT rewrite the entire app.
+Find issues, fix them, and improve stability.
+
+----------------------------------
+SECTION 1 — PRODUCT QUALITY
+----------------------------------
+
+Check and fix:
+
+1. App Stability
+- Ensure app launches without crashes
+- Fix any runtime errors
+- Handle missing/null data safely
+
+2. Navigation
+- Verify all routes/screens work correctly
+- Fix broken navigation flows
+- Prevent undefined route access
+
+3. Startup Performance
+- Optimize initial load time
+- Remove unnecessary blocking operations
+- Lazy load heavy modules
+
+4. UI Responsiveness
+- Ensure UI works on different screen sizes
+- Fix layout breaking issues
+- Ensure mobile responsiveness
+
+5. Bug Detection
+- Identify major bugs
+- Fix ANR (App Not Responding) issues
+- Handle async properly (no hanging states)
+
+6. Offline Handling
+- Detect no internet connection
+- Return graceful error messages
+- Prevent crashes when offline
+
+----------------------------------
+SECTION 2 — PERFORMANCE & MONITORING
+----------------------------------
+
+1. Crash Reporting
+Integrate a crash reporting system (e.g., Sentry or Firebase Crashlytics equivalent for Node backend):
+
+- Log all server errors
+- Capture stack traces
+- Track critical failures
+
+2. Analytics Tracking
+Add analytics tracking:
+
+- User signup/login events
+- Diet generation usage
+- Workout generation usage
+- Camera scan usage
+
+Log events in a structured way.
+
+3. Memory Optimization
+- Detect memory leaks
+- Remove unused variables
+- Optimize large objects in memory
+
+4. Network Optimization
+- Reduce redundant API calls
+- Add caching where possible
+- Optimize response payload size
+
+5. App Size Optimization
+- Remove unused dependencies
+- Minify backend code where applicable
+- Avoid unnecessary libraries
+
+----------------------------------
+SECTION 3 — ERROR HANDLING STANDARD
+----------------------------------
+
+Ensure all APIs return:
+
+{
+  success: false,
+  message: "Clear error message"
+}
+
+Add try/catch in all async routes.
+
+----------------------------------
+SECTION 4 — SECURITY & SAFETY
+----------------------------------
+
+- Ensure environment variables are used
+- No API keys exposed
+- Input validation on all routes
+- Rate limiting applied
+
+----------------------------------
+SECTION 5 — FINAL OUTPUT
+----------------------------------
+
+Provide:
+
+1. List of all issues found
+2. Fixed code snippets
+3. Performance improvements applied
+4. Monitoring setup code
+5. Remaining risks (if any)
+6. Final production readiness checklist
+
+Be strict and thorough.
+Assume this app will be submitted to production.
