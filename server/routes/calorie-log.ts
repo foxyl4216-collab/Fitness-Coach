@@ -5,6 +5,7 @@ import { getSupabaseClient } from "../config/supabase";
 import { uploadImage } from "../middleware/upload";
 import { routeAI } from "../services/aiRouter";
 import { aiRateLimit } from "../middleware/aiRateLimit";
+import { logAnalytics, logServerError } from "../utils/logger";
 
 const router = Router();
 
@@ -236,7 +237,11 @@ router.post("/scan", requireAuth, checkSubscription, requirePremium, aiRateLimit
 
       const savedLog = data;
 
-      console.log("📸 Success! Log saved:", savedLog?.id);
+      logAnalytics("camera_scan_success", req.userId, {
+        food: foodName,
+        calories: Math.round(analysis.total_estimated_calories),
+        confidence: analysis.confidence_score,
+      });
       return res.status(201).json({
         success: true,
         message: "Food scanned and logged successfully",
@@ -250,7 +255,7 @@ router.post("/scan", requireAuth, checkSubscription, requirePremium, aiRateLimit
         },
       });
     } catch (err: any) {
-      console.error("📸 Route error:", err);
+      logServerError("/calorie-log/scan", err, req.userId);
       return res.status(500).json({
         success: false,
         error: err.message || "Internal server error",

@@ -4,7 +4,9 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth-context";
 import { FitCoachProvider } from "@/lib/context";
@@ -35,7 +37,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Rubik_400Regular,
     Rubik_500Medium,
     Rubik_600SemiBold,
@@ -43,27 +45,32 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <KeyboardProvider>
-            <AuthProvider>
-              <SubscriptionProvider>
-                <FitCoachProvider>
-                  <StatusBar style="light" />
-                  <RootLayoutNav />
-                </FitCoachProvider>
-              </SubscriptionProvider>
-            </AuthProvider>
-          </KeyboardProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <KeyboardProvider>
+              <AuthProvider>
+                <SubscriptionProvider>
+                  <FitCoachProvider>
+                    <StatusBar style="light" />
+                    <RootLayoutNav />
+                    <OfflineBanner />
+                  </FitCoachProvider>
+                </SubscriptionProvider>
+              </AuthProvider>
+            </KeyboardProvider>
+          </GestureHandlerRootView>
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

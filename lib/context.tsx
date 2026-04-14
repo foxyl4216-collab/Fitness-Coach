@@ -101,7 +101,8 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
               setIsOnboarded(true);
             }
           }
-        } catch {
+        } catch (e) {
+          console.warn('[FitCoach] Could not restore profile from backend (offline or not found):', (e as Error)?.message);
         }
       }
 
@@ -123,11 +124,12 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
             await Storage.saveDietPlan(backendDiet);
             setDietPlan(backendDiet);
           }
-        } catch {
+        } catch (e) {
+          console.warn('[FitCoach] Could not restore diet plan from backend (offline or not found):', (e as Error)?.message);
         }
       }
     } catch (e) {
-      console.error('Failed to load data:', e);
+      console.error('[FitCoach] Failed to load local data:', e);
     } finally {
       setIsLoading(false);
     }

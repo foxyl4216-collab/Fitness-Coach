@@ -100,8 +100,13 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: (failureCount, error) => {
+        const msg = (error as Error)?.message || "";
+        if (msg.startsWith("401") || msg.startsWith("403") || msg.startsWith("404")) return false;
+        return failureCount < 2;
+      },
     },
     mutations: {
       retry: false,

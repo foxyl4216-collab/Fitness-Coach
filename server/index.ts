@@ -3,6 +3,19 @@ import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
+import { logger } from "./utils/logger";
+
+process.on("uncaughtException", (err) => {
+  logger.error("Uncaught Exception — process will continue", {
+    message: err.message,
+    stack: err.stack?.split("\n")[0],
+  });
+});
+
+process.on("unhandledRejection", (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  logger.error("Unhandled Promise Rejection", { reason: msg });
+});
 
 const app = express();
 const log = console.log;
@@ -11,6 +24,20 @@ declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
   }
+}
+
+function setupSecurityHeaders(app: express.Application) {
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()"
+    );
+    next();
+  });
 }
 
 function setupCors(app: express.Application) {
@@ -206,27 +233,34 @@ function configureExpoAndLanding(app: express.Application) {
 }
 
 function setupErrorHandler(app: express.Application) {
-  app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+  app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     const error = err as {
       status?: number;
       statusCode?: number;
       message?: string;
+      stack?: string;
     };
 
     const status = error.status || error.statusCode || 500;
     const message = error.message || "Internal Server Error";
 
-    console.error("Internal Server Error:", err);
+    logger.error("Unhandled route error", {
+      route: `${req.method} ${req.path}`,
+      status,
+      message,
+      stack: process.env.NODE_ENV !== "production" ? error.stack?.split("\n")[0] : undefined,
+    });
 
     if (res.headersSent) {
       return next(err);
     }
 
-    return res.status(status).json({ message });
+    return res.status(status).json({ success: false, message });
   });
 }
 
 (async () => {
+  setupSecurityHeaders(app);
   setupCors(app);
   setupBodyParsing(app);
   setupRequestLogging(app);

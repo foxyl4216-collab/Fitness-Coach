@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { supabase, supabaseAdmin, getSupabaseClient } from "../config/supabase";
 import { requireAuth, type AuthenticatedRequest } from "../middleware/auth";
+import { loginRateLimit, signupRateLimit } from "../middleware/authRateLimit";
+import { logAnalytics, logServerError } from "../utils/logger";
 
 const router = Router();
 
-router.post("/signup", async (req, res) => {
+router.post("/signup", signupRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -118,17 +120,19 @@ router.post("/signup", async (req, res) => {
       }
     }
 
+    logAnalytics("user_signup", userId, { email: userEmail });
     return res.status(201).json({
       message: "User created successfully",
       user: { id: userId, email: userEmail },
       session: sessionData,
     });
   } catch (err: any) {
+    logServerError("/auth/signup", err);
     return res.status(500).json({ error: err.message || "Internal server error" });
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -143,6 +147,7 @@ router.post("/login", async (req, res) => {
 
     if (error) return res.status(401).json({ error: error.message });
 
+    logAnalytics("user_login", data.user.id, { email: data.user.email });
     return res.json({
       message: "Login successful",
       user: {
@@ -156,6 +161,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err: any) {
+    logServerError("/auth/login", err);
     return res.status(500).json({ error: err.message || "Internal server error" });
   }
 });

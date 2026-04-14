@@ -8,6 +8,7 @@ import { adaptWeeklyDiet, type WeeklyProgress } from "../services/adaptation";
 import { routeAI } from "../services/aiRouter";
 import { aiRateLimit } from "../middleware/aiRateLimit";
 import type { GeneratedDietPlan } from "../services/dietAI";
+import { logAnalytics, logServerError } from "../utils/logger";
 
 const router = Router();
 
@@ -126,6 +127,7 @@ router.post("/generate", requireAuth, checkSubscription, requirePremium, aiRateL
       savedPlan = data;
     }
 
+    logAnalytics("diet_plan_generated", req.userId, { week: nextWeek, calories: macros.calories });
     return res.status(201).json({
       message: "Diet plan generated successfully",
       week_number: nextWeek,
@@ -133,7 +135,7 @@ router.post("/generate", requireAuth, checkSubscription, requirePremium, aiRateL
       diet_plan: savedPlan,
     });
   } catch (err: any) {
-    console.error("Diet generation error:", err);
+    logServerError("/diet-plan/generate", err, req.userId);
     return res.status(500).json({ error: err.message || "Failed to generate diet plan" });
   }
 });
