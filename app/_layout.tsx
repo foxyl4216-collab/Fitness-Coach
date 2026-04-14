@@ -23,6 +23,15 @@ import {
 
 SplashScreen.preventAutoHideAsync();
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const msg = event.reason?.message ?? '';
+    if (typeof msg === 'string' && msg.includes('ms timeout exceeded')) {
+      event.preventDefault();
+    }
+  });
+}
+
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false, headerBackTitle: "Back" }}>
