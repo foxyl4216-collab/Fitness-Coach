@@ -7,13 +7,11 @@ import {
   Pressable,
   TextInput,
   Modal,
-  FlatList,
   Platform,
   Alert,
   ActivityIndicator,
   Animated,
   PanResponder,
-  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -29,12 +27,6 @@ import { useSubscription } from '@/lib/subscription-context';
 import { getApiUrl } from '@/lib/query-client';
 import { getStoredToken } from '@/lib/auth-token';
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SHEET_PEEK = 72;
-const SHEET_EXPANDED_OFFSET = 220;
-const SNAP_COLLAPSED = SCREEN_HEIGHT - SHEET_EXPANDED_OFFSET - SHEET_PEEK;
-const SNAP_EXPANDED = 0;
-
 function CalorieRingSvg({ progress, remaining, isOver }: {
   progress: number;
   remaining: number;
@@ -44,10 +36,8 @@ function CalorieRingSvg({ progress, remaining, isOver }: {
   const strokeWidth = 9;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const clampedProgress = Math.min(1, Math.max(0, progress));
-  const strokeDashoffset = circumference * (1 - clampedProgress);
+  const strokeDashoffset = circumference * (1 - Math.min(1, Math.max(0, progress)));
   const strokeColor = isOver ? Colors.error : Colors.primary;
-
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
@@ -79,13 +69,10 @@ export default function TrackerScreen() {
   const selectedDate = new Date().toISOString().split('T')[0];
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const cameraRef = useRef<CameraView>(null);
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [, requestCameraPermission] = useCameraPermissions();
 
   const slideY = useRef(new Animated.Value(0)).current;
-  const sheetY = useRef(new Animated.Value(SNAP_COLLAPSED)).current;
-  const sheetDragStart = useRef(SNAP_COLLAPSED);
 
   const openModal = () => {
     slideY.setValue(600);
@@ -100,49 +87,13 @@ export default function TrackerScreen() {
     });
   };
 
-  const snapSheet = (toExpanded: boolean) => {
-    const toValue = toExpanded ? SNAP_EXPANDED : SNAP_COLLAPSED;
-    setIsSheetExpanded(toExpanded);
-    Animated.spring(sheetY, {
-      toValue,
-      useNativeDriver: true,
-      tension: 70,
-      friction: 12,
-    }).start();
-    sheetDragStart.current = toValue;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
-
-  const sheetPanResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 4,
-    onPanResponderGrant: () => {
-      sheetDragStart.current = isSheetExpanded ? SNAP_EXPANDED : SNAP_COLLAPSED;
-    },
-    onPanResponderMove: (_, g) => {
-      const next = sheetDragStart.current + g.dy;
-      sheetY.setValue(Math.max(SNAP_EXPANDED, Math.min(SNAP_COLLAPSED, next)));
-    },
-    onPanResponderRelease: (_, g) => {
-      const midpoint = (SNAP_EXPANDED + SNAP_COLLAPSED) / 2;
-      const current = sheetDragStart.current + g.dy;
-      const goExpanded = g.vy < -0.5 || (g.vy >= -0.5 && current < midpoint);
-      snapSheet(goExpanded);
-    },
-  }), [isSheetExpanded]);
-
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: (_, g) => g.dy > 5,
-    onPanResponderMove: (_, g) => {
-      if (g.dy > 0) slideY.setValue(g.dy);
-    },
+    onPanResponderMove: (_, g) => { if (g.dy > 0) slideY.setValue(g.dy); },
     onPanResponderRelease: (_, g) => {
-      if (g.dy >= 80) {
-        closeModal();
-      } else {
-        Animated.spring(slideY, { toValue: 0, useNativeDriver: true }).start();
-      }
+      if (g.dy >= 80) closeModal();
+      else Animated.spring(slideY, { toValue: 0, useNativeDriver: true }).start();
     },
   }), []);
 
@@ -153,10 +104,9 @@ export default function TrackerScreen() {
 
   const totalCalories = useMemo(() => todayFoods.reduce((s, f) => s + f.calories, 0), [todayFoods]);
   const totalProtein = useMemo(() => todayFoods.reduce((s, f) => s + (f.protein || 0), 0), [todayFoods]);
-
   const dailyTarget = plan?.dailyCalories || 2000;
   const remaining = Math.max(0, dailyTarget - totalCalories);
-  const progress = Math.min(1, totalCalories / dailyTarget);
+  const progress = totalCalories / dailyTarget;
   const isOver = totalCalories > dailyTarget;
 
   const handleAdd = async () => {
@@ -164,16 +114,9 @@ export default function TrackerScreen() {
     const cal = parseInt(foodCalories, 10);
     if (isNaN(cal) || cal <= 0) return;
     const prot = foodProtein ? parseInt(foodProtein, 10) : undefined;
-    await addFoodEntry({
-      name: foodName.trim(),
-      calories: cal,
-      protein: prot && !isNaN(prot) ? prot : undefined,
-      date: selectedDate,
-    });
+    await addFoodEntry({ name: foodName.trim(), calories: cal, protein: prot && !isNaN(prot) ? prot : undefined, date: selectedDate });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setFoodName('');
-    setFoodCalories('');
-    setFoodProtein('');
+    setFoodName(''); setFoodCalories(''); setFoodProtein('');
     setShowAddModal(false);
   };
 
@@ -223,7 +166,7 @@ export default function TrackerScreen() {
       const photo = await cameraRef.current.takePictureAsync({ base64: true });
       setShowCamera(false);
       if (photo?.base64) await processFoodImage(photo.base64, (photo as any).mimeType || 'image/jpeg');
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Failed to capture photo. Please try again.');
       setIsScanning(false);
     }
@@ -250,8 +193,7 @@ export default function TrackerScreen() {
   const processFoodImage = async (base64: string, mimeType: string) => {
     try {
       const token = getStoredToken();
-      const baseUrl = getApiUrl();
-      const url = new URL('/api/calorie-log/scan', baseUrl).toString();
+      const url = new URL('/api/calorie-log/scan', getApiUrl()).toString();
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 90000);
       let response: Response;
@@ -279,40 +221,51 @@ export default function TrackerScreen() {
     } catch (err: any) {
       if (err.name === 'AbortError') Alert.alert('Timeout', 'Scan took too long. Please try again.');
       else Alert.alert('Error', err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsScanning(false);
     }
   };
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top + 16;
+  const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom + 16;
+  const canAdd = !!foodName.trim() && !!foodCalories.trim();
 
   return (
-    <View style={[styles.container]}>
-      <View style={{ paddingTop: topPad }}>
-        <View style={styles.topBar}>
-          <Text style={styles.title}>Tracker</Text>
-          <View style={styles.topActions}>
-            <Pressable onPress={handleShowScanOptions} style={[styles.iconBtn, styles.iconBtnOutline]} disabled={isScanning}>
-              {isScanning ? (
-                <ActivityIndicator size="small" color={Colors.primary} />
-              ) : (
-                <View>
-                  <Ionicons name="camera-outline" size={26} color={Colors.primary} />
-                  {!isPremium && (
-                    <View style={styles.lockBadge}>
-                      <Ionicons name="lock-closed" size={7} color={Colors.black} />
-                    </View>
-                  )}
-                </View>
-              )}
-            </Pressable>
-            <Pressable
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
-              style={[styles.iconBtn, styles.iconBtnPrimary]}
-            >
-              <Ionicons name="add" size={26} color={Colors.black} />
-            </Pressable>
-          </View>
+    <View style={styles.container}>
+      {/* Fixed header */}
+      <View style={[styles.header, { paddingTop: topPad }]}>
+        <Text style={styles.title}>Tracker</Text>
+        <View style={styles.topActions}>
+          <Pressable onPress={handleShowScanOptions} style={[styles.iconBtn, styles.iconBtnOutline]} disabled={isScanning}>
+            {isScanning ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <View>
+                <Ionicons name="camera-outline" size={24} color={Colors.primary} />
+                {!isPremium && (
+                  <View style={styles.lockBadge}>
+                    <Ionicons name="lock-closed" size={7} color={Colors.black} />
+                  </View>
+                )}
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
+            style={[styles.iconBtn, styles.iconBtnPrimary]}
+          >
+            <Ionicons name="add" size={26} color={Colors.black} />
+          </Pressable>
         </View>
+      </View>
 
+      {/* Scrollable content — swipe down to see food log */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 20 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Calorie summary card */}
         <View style={styles.summaryCard}>
           <CalorieRingSvg progress={progress} remaining={isOver ? totalCalories - dailyTarget : remaining} isOver={isOver} />
           <View style={styles.summaryStats}>
@@ -328,93 +281,63 @@ export default function TrackerScreen() {
             ))}
           </View>
         </View>
-      </View>
 
-      <Animated.View
-        style={[styles.sheet, { transform: [{ translateY: sheetY }] }]}
-      >
-        <View style={styles.sheetHandleArea} {...sheetPanResponder.panHandlers}>
-          <View style={styles.sheetHandle} />
-          <View style={styles.sheetHeaderRow}>
-            <Text style={styles.sheetTitle}>Food Log</Text>
-            <View style={styles.sheetMeta}>
-              {todayFoods.length > 0 && (
-                <Text style={styles.sheetCount}>{todayFoods.length} item{todayFoods.length !== 1 ? 's' : ''}</Text>
-              )}
-              <Ionicons
-                name={isSheetExpanded ? 'chevron-down' : 'chevron-up'}
-                size={16}
-                color={Colors.textMuted}
-              />
-            </View>
-          </View>
+        {/* Scroll hint */}
+        <View style={styles.scrollHint}>
+          <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
+          <Text style={styles.scrollHintText}>Swipe down to see your food log</Text>
+          <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
         </View>
 
-        <FlatList
-          data={todayFoods}
-          keyExtractor={item => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.sheetList}
-          ListEmptyComponent={
+        {/* Food log section */}
+        <View style={styles.foodLogSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Food Log</Text>
+            {todayFoods.length > 0 && (
+              <Text style={styles.sectionCount}>{todayFoods.length} item{todayFoods.length !== 1 ? 's' : ''}</Text>
+            )}
+          </View>
+
+          {todayFoods.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="restaurant-outline" size={36} color={Colors.textMuted} />
               <Text style={styles.emptyText}>No food logged today</Text>
               <Text style={styles.emptySubtext}>Tap + to add your meals</Text>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.foodItemRow}>
-              <View style={styles.foodItemLeft}>
-                <View style={[styles.foodDot, { backgroundColor: item.source === 'camera' ? Colors.accent : Colors.primary }]} />
-                <View style={styles.foodInfo}>
-                  <Text style={styles.foodName}>{item.name}</Text>
-                  {item.protein ? <Text style={styles.foodProtein}>{item.protein}g protein</Text> : null}
-                </View>
-              </View>
-              <View style={styles.foodItemRight}>
-                <Text style={styles.foodCal}>{item.calories}</Text>
-                <Text style={styles.foodCalLabel}>kcal</Text>
-              </View>
-              <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
-                <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
+                style={styles.emptyAddBtn}
+              >
+                <Ionicons name="add" size={18} color={Colors.black} />
+                <Text style={styles.emptyAddBtnText}>Add Food</Text>
               </Pressable>
             </View>
-          )}
-        />
-
-        <View style={[styles.floatingBar, { bottom: Platform.OS === 'web' ? 34 : insets.bottom + 16 }]}>
-          <Pressable
-            onPress={handleShowScanOptions}
-            style={[styles.floatingBarBtn, styles.floatingBarScan]}
-            disabled={isScanning}
-          >
-            {isScanning ? (
-              <ActivityIndicator size="small" color={Colors.accent} />
-            ) : (
-              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="camera-outline" size={20} color={Colors.accent} />
-                {!isPremium && (
-                  <View style={styles.lockBadge}>
-                    <Ionicons name="lock-closed" size={7} color={Colors.black} />
+          ) : (
+            todayFoods.map((item) => (
+              <View key={item.id} style={styles.foodItemRow}>
+                <View style={styles.foodItemLeft}>
+                  <View style={[styles.foodDot, { backgroundColor: item.source === 'camera' ? Colors.accent : Colors.primary }]} />
+                  <View style={styles.foodInfo}>
+                    <Text style={styles.foodName}>{item.name}</Text>
+                    {item.protein ? <Text style={styles.foodProtein}>{item.protein}g protein</Text> : null}
                   </View>
-                )}
+                </View>
+                <View style={styles.foodItemRight}>
+                  <Text style={styles.foodCal}>{item.calories}</Text>
+                  <Text style={styles.foodCalLabel}>kcal</Text>
+                </View>
+                <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
+                  <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
+                </Pressable>
               </View>
-            )}
-            <Text style={styles.floatingBarScanText}>Scan</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
-            style={[styles.floatingBarBtn, styles.floatingBarAdd]}
-          >
-            <Ionicons name="add" size={26} color={Colors.black} />
-            <Text style={styles.floatingBarAddText}>Add Food</Text>
-          </Pressable>
+            ))
+          )}
         </View>
-      </Animated.View>
+      </ScrollView>
 
+      {/* Add food modal */}
       <Modal visible={showAddModal} animationType="none" transparent>
         <View style={styles.modalOverlay}>
-          <Animated.View style={[styles.modalContent, { paddingBottom: insets.bottom + 16, transform: [{ translateY: slideY }] }]}>
+          <Animated.View style={[styles.modalContent, { paddingBottom: bottomPad + 8, transform: [{ translateY: slideY }] }]}>
             <View style={styles.modalHandleArea} {...panResponder.panHandlers}>
               <View style={styles.modalHandle} />
             </View>
@@ -443,7 +366,6 @@ export default function TrackerScreen() {
               <Text style={styles.inputLabel}>Food Name</Text>
               <TextInput style={styles.input} value={foodName} onChangeText={setFoodName} placeholder="e.g. Chicken Rice" placeholderTextColor={Colors.textMuted} />
             </View>
-
             <View style={styles.inputRow}>
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={styles.inputLabel}>Calories</Text>
@@ -454,21 +376,12 @@ export default function TrackerScreen() {
                 <TextInput style={styles.input} value={foodProtein} onChangeText={setFoodProtein} placeholder="optional" placeholderTextColor={Colors.textMuted} keyboardType="number-pad" />
               </View>
             </View>
-
             <View style={styles.modalButtons}>
-              <Pressable
-                onPress={handleSaveFood}
-                style={[styles.saveBtn, (!foodName.trim() || !foodCalories.trim()) && styles.btnDisabled]}
-                disabled={!foodName.trim() || !foodCalories.trim()}
-              >
+              <Pressable onPress={handleSaveFood} style={[styles.saveBtn, !canAdd && styles.btnDisabled]} disabled={!canAdd}>
                 <Ionicons name="heart-outline" size={16} color={Colors.secondary} />
                 <Text style={styles.saveBtnText}>Save</Text>
               </Pressable>
-              <Pressable
-                onPress={handleAdd}
-                style={[styles.addBtn, (!foodName.trim() || !foodCalories.trim()) && styles.btnDisabled]}
-                disabled={!foodName.trim() || !foodCalories.trim()}
-              >
+              <Pressable onPress={handleAdd} style={[styles.addBtn, !canAdd && styles.btnDisabled]} disabled={!canAdd}>
                 <Text style={styles.addBtnText}>Add Entry</Text>
               </Pressable>
             </View>
@@ -476,11 +389,12 @@ export default function TrackerScreen() {
         </View>
       </Modal>
 
+      {/* Camera modal (native only) */}
       {Platform.OS !== 'web' && (
         <Modal visible={showCamera} animationType="slide">
           <View style={styles.cameraContainer}>
             <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-            <View style={[styles.cameraControls, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={[styles.cameraControls, { paddingBottom: bottomPad + 8 }]}>
               <Pressable onPress={() => setShowCamera(false)} style={styles.cameraCancelBtn}>
                 <Ionicons name="close" size={22} color={Colors.text} />
               </Pressable>
@@ -501,12 +415,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  topBar: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingBottom: 12,
+    backgroundColor: Colors.background,
   },
   title: {
     fontSize: 28,
@@ -519,9 +434,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   iconBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -544,8 +459,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+  },
   summaryCard: {
-    marginHorizontal: 20,
     backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 20,
@@ -554,6 +475,7 @@ const styles = StyleSheet.create({
     gap: 20,
     borderWidth: 1,
     borderColor: Colors.border,
+    marginBottom: 10,
   },
   ringValue: {
     fontSize: 20,
@@ -586,61 +508,42 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    top: SHEET_EXPANDED_OFFSET,
-    backgroundColor: Colors.cardElevated,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: Colors.borderStrong,
+  scrollHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    marginBottom: 6,
   },
-  sheetHandleArea: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+  scrollHintText: {
+    fontSize: 11,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
   },
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.textMuted,
-    alignSelf: 'center',
-    marginBottom: 14,
+  foodLogSection: {
+    flex: 1,
   },
-  sheetHeaderRow: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  sheetTitle: {
+  sectionTitle: {
     fontSize: 17,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
   },
-  sheetMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sheetCount: {
+  sectionCount: {
     fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
-  sheetList: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 100,
-  },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
-    gap: 6,
+    paddingVertical: 48,
+    gap: 8,
   },
   emptyText: {
     fontSize: 15,
@@ -651,6 +554,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
+  },
+  emptyAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 14,
+  },
+  emptyAddBtnText: {
+    fontSize: 14,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.black,
   },
   foodItemRow: {
     flexDirection: 'row',
@@ -673,9 +591,7 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
   },
-  foodInfo: {
-    flex: 1,
-  },
+  foodInfo: { flex: 1 },
   foodName: {
     fontSize: 14,
     fontFamily: 'Rubik_500Medium',
@@ -701,46 +617,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
-  deleteButton: {
-    padding: 4,
-  },
-  floatingBar: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    gap: 10,
-    zIndex: 100,
-  },
-  floatingBarBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  floatingBarScan: {
-    flex: 1,
-    backgroundColor: Colors.card,
-    borderColor: Colors.accent + '40',
-  },
-  floatingBarScanText: {
-    fontSize: 14,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.accent,
-  },
-  floatingBarAdd: {
-    flex: 2,
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  floatingBarAddText: {
-    fontSize: 15,
-    fontFamily: 'Rubik_700Bold',
-    color: Colors.black,
-  },
+  deleteButton: { padding: 4 },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -759,7 +636,6 @@ const styles = StyleSheet.create({
   modalHandleArea: {
     alignItems: 'center',
     paddingVertical: 12,
-    marginTop: 2,
   },
   modalHandle: {
     width: 36,
@@ -786,9 +662,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 8,
   },
-  quickAddRow: {
-    marginBottom: 20,
-  },
+  quickAddRow: { marginBottom: 20 },
   quickAddChip: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
@@ -810,9 +684,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: 2,
   },
-  inputGroup: {
-    marginBottom: 14,
-  },
+  inputGroup: { marginBottom: 14 },
   inputLabel: {
     fontSize: 11,
     fontFamily: 'Rubik_500Medium',
@@ -871,16 +743,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.black,
   },
-  btnDisabled: {
-    opacity: 0.4,
-  },
+  btnDisabled: { opacity: 0.4 },
   cameraContainer: {
     flex: 1,
     backgroundColor: Colors.background,
   },
-  camera: {
-    flex: 1,
-  },
+  camera: { flex: 1 },
   cameraControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
