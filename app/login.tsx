@@ -360,10 +360,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  inputContainerFocused: {
-    borderColor: Colors.primary,
-    backgroundColor: 'rgba(74,222,128,0.04)',
-  },
   inputIcon: {
     paddingLeft: 14,
   },
