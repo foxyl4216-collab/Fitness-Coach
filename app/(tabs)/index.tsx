@@ -83,16 +83,12 @@ function CalorieRing({ progress, eaten, remaining, isOver }: {
       </Svg>
       <View style={{ alignItems: 'center' }}>
         <Text style={[styles.ringValue, isOver && { color: Colors.error }]}>
-          {isOver ? '+' + (caloriesOver(eaten, remaining)) : remaining}
+          {isOver ? '+' + remaining : remaining}
         </Text>
         <Text style={styles.ringLabel}>{isOver ? 'over today' : 'kcal left'}</Text>
       </View>
     </View>
   );
-}
-
-function caloriesOver(eaten: number, remaining: number) {
-  return eaten - (eaten - remaining);
 }
 
 export default function HomeScreen() {

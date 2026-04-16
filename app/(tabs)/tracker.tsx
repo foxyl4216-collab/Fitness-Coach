@@ -102,7 +102,7 @@ export default function TrackerScreen() {
     onPanResponderMove: (_, g) => { if (g.dy > 0) slideY.setValue(g.dy); },
     onPanResponderRelease: (_, g) => {
       if (g.dy >= 80) closeModal();
-      else Animated.spring(slideY, { toValue: 0, useNativeDriver: true }).start();
+      else Animated.spring(slideY, { toValue: 0, useNativeDriver: nativeDriver }).start();
     },
   }), []);
 
