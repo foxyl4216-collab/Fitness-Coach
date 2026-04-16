@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Animated,
   PanResponder,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
@@ -27,6 +28,12 @@ import { useFitCoach } from '@/lib/context';
 import { useSubscription } from '@/lib/subscription-context';
 import { getApiUrl } from '@/lib/query-client';
 import { getStoredToken } from '@/lib/auth-token';
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const SHEET_PEEK = 72;
+const SHEET_EXPANDED_OFFSET = 220;
+const SNAP_COLLAPSED = SCREEN_HEIGHT - SHEET_EXPANDED_OFFSET - SHEET_PEEK;
+const SNAP_EXPANDED = 0;
 
 function CalorieRingSvg({ progress, remaining, isOver }: {
   progress: number;
@@ -61,126 +68,6 @@ function CalorieRingSvg({ progress, remaining, isOver }: {
   );
 }
 
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function buildDateList(): { iso: string; dayName: string; dayNum: number; monthShort: string }[] {
-  const today = new Date();
-  const items = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    items.push({
-      iso: d.toISOString().split('T')[0],
-      dayName: DAY_NAMES[d.getDay()],
-      dayNum: d.getDate(),
-      monthShort: d.toLocaleString('default', { month: 'short' }),
-    });
-  }
-  return items;
-}
-
-function DateStrip({ selectedDate, onSelect }: { selectedDate: string; onSelect: (iso: string) => void }) {
-  const scrollRef = useRef<ScrollView>(null);
-  const dates = useMemo(() => buildDateList(), []);
-  const todayIso = new Date().toISOString().split('T')[0];
-
-  useEffect(() => {
-    const idx = dates.findIndex(d => d.iso === selectedDate);
-    if (idx >= 0 && scrollRef.current) {
-      setTimeout(() => {
-        scrollRef.current?.scrollTo({ x: Math.max(0, idx - 2) * 60, animated: true });
-      }, 100);
-    }
-  }, [selectedDate]);
-
-  return (
-    <ScrollView
-      ref={scrollRef}
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={stripStyles.strip}
-    >
-      {dates.map(item => {
-        const isSelected = item.iso === selectedDate;
-        const isToday = item.iso === todayIso;
-        return (
-          <Pressable
-            key={item.iso}
-            onPress={() => { onSelect(item.iso); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            style={[stripStyles.dayItem, isSelected && stripStyles.dayItemSelected]}
-          >
-            <Text style={[stripStyles.dayName, isSelected && stripStyles.dayNameSelected]}>
-              {item.dayName}
-            </Text>
-            <View style={[stripStyles.dayNumCircle, isSelected && stripStyles.dayNumCircleSelected]}>
-              <Text style={[stripStyles.dayNum, isSelected && stripStyles.dayNumSelected]}>
-                {item.dayNum}
-              </Text>
-            </View>
-            {isToday && <View style={[stripStyles.todayDot, isSelected && stripStyles.todayDotSelected]} />}
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-const stripStyles = StyleSheet.create({
-  strip: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    gap: 4,
-  },
-  dayItem: {
-    width: 52,
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderRadius: 16,
-    gap: 6,
-  },
-  dayItemSelected: {
-    backgroundColor: 'rgba(74,222,128,0.12)',
-  },
-  dayName: {
-    fontSize: 11,
-    fontFamily: 'Rubik_500Medium',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  dayNameSelected: {
-    color: Colors.primary,
-  },
-  dayNumCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayNumCircleSelected: {
-    backgroundColor: Colors.primary,
-  },
-  dayNum: {
-    fontSize: 15,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.textSecondary,
-  },
-  dayNumSelected: {
-    color: Colors.black,
-  },
-  todayDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.textMuted,
-    marginTop: -2,
-  },
-  todayDotSelected: {
-    backgroundColor: Colors.primary,
-  },
-});
-
 export default function TrackerScreen() {
   const insets = useSafeAreaInsets();
   const { plan, foodLog, savedFoods, addFoodEntry, removeFoodEntry, saveFavoriteFood } = useFitCoach();
@@ -189,12 +76,16 @@ export default function TrackerScreen() {
   const [foodName, setFoodName] = useState('');
   const [foodCalories, setFoodCalories] = useState('');
   const [foodProtein, setFoodProtein] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const selectedDate = new Date().toISOString().split('T')[0];
   const [isScanning, setIsScanning] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+
   const slideY = useRef(new Animated.Value(0)).current;
+  const sheetY = useRef(new Animated.Value(SNAP_COLLAPSED)).current;
+  const sheetDragStart = useRef(SNAP_COLLAPSED);
 
   const openModal = () => {
     slideY.setValue(600);
@@ -208,6 +99,37 @@ export default function TrackerScreen() {
       slideY.setValue(0);
     });
   };
+
+  const snapSheet = (toExpanded: boolean) => {
+    const toValue = toExpanded ? SNAP_EXPANDED : SNAP_COLLAPSED;
+    setIsSheetExpanded(toExpanded);
+    Animated.spring(sheetY, {
+      toValue,
+      useNativeDriver: true,
+      tension: 70,
+      friction: 12,
+    }).start();
+    sheetDragStart.current = toValue;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const sheetPanResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 4,
+    onPanResponderGrant: () => {
+      sheetDragStart.current = isSheetExpanded ? SNAP_EXPANDED : SNAP_COLLAPSED;
+    },
+    onPanResponderMove: (_, g) => {
+      const next = sheetDragStart.current + g.dy;
+      sheetY.setValue(Math.max(SNAP_EXPANDED, Math.min(SNAP_COLLAPSED, next)));
+    },
+    onPanResponderRelease: (_, g) => {
+      const midpoint = (SNAP_EXPANDED + SNAP_COLLAPSED) / 2;
+      const current = sheetDragStart.current + g.dy;
+      const goExpanded = g.vy < -0.5 || (g.vy >= -0.5 && current < midpoint);
+      snapSheet(goExpanded);
+    },
+  }), [isSheetExpanded]);
 
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -300,7 +222,7 @@ export default function TrackerScreen() {
       setIsScanning(true);
       const photo = await cameraRef.current.takePictureAsync({ base64: true });
       setShowCamera(false);
-      if (photo?.base64) await processFoodImage(photo.base64, photo.mimeType || 'image/jpeg');
+      if (photo?.base64) await processFoodImage(photo.base64, (photo as any).mimeType || 'image/jpeg');
     } catch (err) {
       Alert.alert('Error', 'Failed to capture photo. Please try again.');
       setIsScanning(false);
@@ -360,18 +282,117 @@ export default function TrackerScreen() {
     }
   };
 
+  const topPad = Platform.OS === 'web' ? 67 : insets.top + 16;
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top + 16 }]}>
-      <View style={styles.topBar}>
-        <Text style={styles.title}>Tracker</Text>
-        <View style={styles.topActions}>
-          <Pressable onPress={handleShowScanOptions} style={[styles.iconBtn, styles.iconBtnOutline]} disabled={isScanning}>
+    <View style={[styles.container]}>
+      <View style={{ paddingTop: topPad }}>
+        <View style={styles.topBar}>
+          <Text style={styles.title}>Tracker</Text>
+          <View style={styles.topActions}>
+            <Pressable onPress={handleShowScanOptions} style={[styles.iconBtn, styles.iconBtnOutline]} disabled={isScanning}>
+              {isScanning ? (
+                <ActivityIndicator size="small" color={Colors.primary} />
+              ) : (
+                <View>
+                  <Ionicons name="camera-outline" size={26} color={Colors.primary} />
+                  {!isPremium && (
+                    <View style={styles.lockBadge}>
+                      <Ionicons name="lock-closed" size={7} color={Colors.black} />
+                    </View>
+                  )}
+                </View>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
+              style={[styles.iconBtn, styles.iconBtnPrimary]}
+            >
+              <Ionicons name="add" size={26} color={Colors.black} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.summaryCard}>
+          <CalorieRingSvg progress={progress} remaining={isOver ? totalCalories - dailyTarget : remaining} isOver={isOver} />
+          <View style={styles.summaryStats}>
+            {[
+              { value: String(totalCalories), label: 'eaten', color: isOver ? Colors.error : Colors.primary },
+              { value: String(dailyTarget), label: 'target', color: Colors.accent },
+              { value: `${totalProtein}g`, label: 'protein', color: Colors.violet },
+            ].map((stat) => (
+              <View key={stat.label} style={styles.summaryStat}>
+                <Text style={[styles.summaryStatValue, { color: stat.color }]}>{stat.value}</Text>
+                <Text style={styles.summaryStatLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      <Animated.View
+        style={[styles.sheet, { transform: [{ translateY: sheetY }] }]}
+      >
+        <View style={styles.sheetHandleArea} {...sheetPanResponder.panHandlers}>
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetHeaderRow}>
+            <Text style={styles.sheetTitle}>Food Log</Text>
+            <View style={styles.sheetMeta}>
+              {todayFoods.length > 0 && (
+                <Text style={styles.sheetCount}>{todayFoods.length} item{todayFoods.length !== 1 ? 's' : ''}</Text>
+              )}
+              <Ionicons
+                name={isSheetExpanded ? 'chevron-down' : 'chevron-up'}
+                size={16}
+                color={Colors.textMuted}
+              />
+            </View>
+          </View>
+        </View>
+
+        <FlatList
+          data={todayFoods}
+          keyExtractor={item => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.sheetList}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="restaurant-outline" size={36} color={Colors.textMuted} />
+              <Text style={styles.emptyText}>No food logged today</Text>
+              <Text style={styles.emptySubtext}>Tap + to add your meals</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.foodItemRow}>
+              <View style={styles.foodItemLeft}>
+                <View style={[styles.foodDot, { backgroundColor: item.source === 'camera' ? Colors.accent : Colors.primary }]} />
+                <View style={styles.foodInfo}>
+                  <Text style={styles.foodName}>{item.name}</Text>
+                  {item.protein ? <Text style={styles.foodProtein}>{item.protein}g protein</Text> : null}
+                </View>
+              </View>
+              <View style={styles.foodItemRight}>
+                <Text style={styles.foodCal}>{item.calories}</Text>
+                <Text style={styles.foodCalLabel}>kcal</Text>
+              </View>
+              <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
+                <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
+              </Pressable>
+            </View>
+          )}
+        />
+
+        <View style={[styles.floatingBar, { bottom: Platform.OS === 'web' ? 34 : insets.bottom + 16 }]}>
+          <Pressable
+            onPress={handleShowScanOptions}
+            style={[styles.floatingBarBtn, styles.floatingBarScan]}
+            disabled={isScanning}
+          >
             {isScanning ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
+              <ActivityIndicator size="small" color={Colors.accent} />
             ) : (
-              <View>
-                <Ionicons name="camera-outline" size={26} color={Colors.primary} />
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="camera-outline" size={20} color={Colors.accent} />
                 {!isPremium && (
                   <View style={styles.lockBadge}>
                     <Ionicons name="lock-closed" size={7} color={Colors.black} />
@@ -379,99 +400,17 @@ export default function TrackerScreen() {
                 )}
               </View>
             )}
+            <Text style={styles.floatingBarScanText}>Scan</Text>
           </Pressable>
           <Pressable
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
-            style={[styles.iconBtn, styles.iconBtnPrimary]}
+            style={[styles.floatingBarBtn, styles.floatingBarAdd]}
           >
             <Ionicons name="add" size={26} color={Colors.black} />
+            <Text style={styles.floatingBarAddText}>Add Food</Text>
           </Pressable>
         </View>
-      </View>
-
-      <DateStrip selectedDate={selectedDate} onSelect={setSelectedDate} />
-
-      <View style={styles.summaryCard}>
-        <CalorieRingSvg progress={progress} remaining={isOver ? totalCalories - dailyTarget : remaining} isOver={isOver} />
-        <View style={styles.summaryStats}>
-          {[
-            { value: String(totalCalories), label: 'eaten', color: isOver ? Colors.error : Colors.primary },
-            { value: String(dailyTarget), label: 'target', color: Colors.accent },
-            { value: `${totalProtein}g`, label: 'protein', color: Colors.violet },
-          ].map((stat) => (
-            <View key={stat.label} style={styles.summaryStat}>
-              <Text style={[styles.summaryStatValue, { color: stat.color }]}>{stat.value}</Text>
-              <Text style={styles.summaryStatLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <Text style={styles.listTitle}>Food Log</Text>
-
-      <FlatList
-        data={todayFoods}
-        keyExtractor={item => item.id}
-        scrollEnabled={!!todayFoods.length}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 110 : 120, paddingHorizontal: 20 }}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="restaurant-outline" size={36} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No food logged</Text>
-            <Text style={styles.emptySubtext}>Tap + to add your meals</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.foodItemRow}>
-            <View style={styles.foodItemLeft}>
-              <View style={[styles.foodDot, { backgroundColor: item.source === 'camera' ? Colors.accent : Colors.primary }]} />
-              <View style={styles.foodInfo}>
-                <Text style={styles.foodName}>{item.name}</Text>
-                {item.protein ? <Text style={styles.foodProtein}>{item.protein}g protein</Text> : null}
-              </View>
-            </View>
-            <View style={styles.foodItemRight}>
-              <Text style={styles.foodCal}>{item.calories}</Text>
-              <Text style={styles.foodCalLabel}>kcal</Text>
-            </View>
-            <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
-              <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
-            </Pressable>
-          </View>
-        )}
-      />
-
-      <View style={[styles.floatingBar, {
-        bottom: Platform.OS === 'web' ? 34 : insets.bottom + 16,
-      }]}>
-        <Pressable
-          onPress={handleShowScanOptions}
-          style={[styles.floatingBarBtn, styles.floatingBarScan]}
-          disabled={isScanning}
-        >
-          {isScanning ? (
-            <ActivityIndicator size="small" color={Colors.accent} />
-          ) : (
-            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="camera-outline" size={20} color={Colors.accent} />
-              {!isPremium && (
-                <View style={styles.lockBadge}>
-                  <Ionicons name="lock-closed" size={7} color={Colors.black} />
-                </View>
-              )}
-            </View>
-          )}
-          <Text style={styles.floatingBarScanText}>Scan</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
-          style={[styles.floatingBarBtn, styles.floatingBarAdd]}
-        >
-          <Ionicons name="add" size={26} color={Colors.black} />
-          <Text style={styles.floatingBarAddText}>Add Food</Text>
-        </Pressable>
-      </View>
+      </Animated.View>
 
       <Modal visible={showAddModal} animationType="none" transparent>
         <View style={styles.modalOverlay}>
@@ -567,7 +506,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,
@@ -610,7 +549,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderRadius: 20,
     padding: 20,
-    marginBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 20,
@@ -648,14 +586,56 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
-  listTitle: {
-    fontSize: 16,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.textSecondary,
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: SHEET_EXPANDED_OFFSET,
+    backgroundColor: Colors.cardElevated,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: Colors.borderStrong,
+  },
+  sheetHandleArea: {
     paddingHorizontal: 20,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.textMuted,
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sheetTitle: {
+    fontSize: 17,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.text,
+  },
+  sheetMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sheetCount: {
+    fontSize: 13,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+  },
+  sheetList: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 100,
   },
   emptyState: {
     alignItems: 'center',
