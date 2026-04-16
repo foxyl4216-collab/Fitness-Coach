@@ -56,19 +56,19 @@ function WeightAreaChart({
       <Svg width="100%" height={CHART_H + 20} viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`} preserveAspectRatio="none">
         <Defs>
           <SvgLinearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={Colors.primary} stopOpacity="0.35" />
+            <Stop offset="0%" stopColor={Colors.primary} stopOpacity="0.4" />
             <Stop offset="100%" stopColor={Colors.primary} stopOpacity="0" />
           </SvgLinearGradient>
         </Defs>
         <Path d={areaPath} fill="url(#areaFill)" />
-        <Path d={linePath} stroke={Colors.primary} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d={linePath} stroke={Colors.primary} strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         {pts.map((p, i) => (
           <SvgCircle
             key={i}
             cx={p.x}
             cy={p.y}
-            r="4"
-            fill={i === pts.length - 1 ? Colors.primary : Colors.card}
+            r={i === pts.length - 1 ? 5 : 3.5}
+            fill={i === pts.length - 1 ? Colors.primary : Colors.cardElevated}
             stroke={Colors.primary}
             strokeWidth="2"
           />
@@ -76,7 +76,7 @@ function WeightAreaChart({
       </Svg>
       <View style={styles.chartLabels}>
         {data.map((d, i) => (
-          <Text key={i} style={[styles.chartLabel, i === data.length - 1 && { color: Colors.primary }]}>
+          <Text key={i} style={[styles.chartLabel, i === data.length - 1 && { color: Colors.primary, fontFamily: 'Rubik_600SemiBold' }]}>
             W{d.week}
           </Text>
         ))}
@@ -84,6 +84,13 @@ function WeightAreaChart({
     </View>
   );
 }
+
+const STAT_CONFIGS = [
+  { icon: 'trending-down-outline' as IoniconName, color: Colors.success, bg: 'rgba(16,185,129,0.15)' },
+  { icon: 'checkmark-circle-outline' as IoniconName, color: Colors.accent, bg: 'rgba(0,212,255,0.15)' },
+  { icon: 'clipboard-outline' as IoniconName, color: Colors.violet, bg: 'rgba(167,139,250,0.15)' },
+  { icon: 'calendar-outline' as IoniconName, color: Colors.amber, bg: 'rgba(245,158,11,0.15)' },
+];
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -193,6 +200,13 @@ export default function ProfileScreen() {
 
   const isGoalMet = (weightChange < 0 && profile.goal === 'fat_loss') || (weightChange > 0 && profile.goal === 'muscle_gain');
 
+  const statsData = [
+    { value: `${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)} kg`, label: 'weight change', configIdx: 0, highlight: isGoalMet },
+    { value: `${avgAdherence}%`, label: 'adherence', configIdx: 1, highlight: false },
+    { value: String(checkIns.length), label: 'check-ins', configIdx: 2, highlight: false },
+    { value: `Wk ${weekNumber}`, label: 'current week', configIdx: 3, highlight: false },
+  ];
+
   return (
     <>
       <ScrollView
@@ -205,7 +219,7 @@ export default function ProfileScreen() {
       >
         <View style={styles.profileHeader}>
           <Pressable style={styles.editBtn} onPress={openEditModal}>
-            <Ionicons name="create-outline" size={18} color={Colors.textSecondary} />
+            <Ionicons name="create-outline" size={17} color={Colors.textSecondary} />
           </Pressable>
           <View style={styles.avatarRing}>
             <LinearGradient colors={['#4ADE80', '#00D4FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarGradient}>
@@ -226,43 +240,36 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.statsGrid}>
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, isGoalMet && styles.statCardPositive]}>
-              <Text style={[styles.statValue, isGoalMet && { color: Colors.success }]}>
-                {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}
-              </Text>
-              <Text style={styles.statLabel}>kg change</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{avgAdherence}%</Text>
-              <Text style={styles.statLabel}>avg adherence</Text>
-            </View>
-          </View>
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{checkIns.length}</Text>
-              <Text style={styles.statLabel}>check-ins done</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: Colors.accent }]}>{weekNumber}</Text>
-              <Text style={styles.statLabel}>current week</Text>
-            </View>
-          </View>
+          {statsData.map((stat, i) => {
+            const cfg = STAT_CONFIGS[stat.configIdx];
+            return (
+              <View key={i} style={[styles.statCard, stat.highlight && styles.statCardPositive]}>
+                <View style={[styles.statIconWrap, { backgroundColor: stat.highlight ? 'rgba(16,185,129,0.2)' : cfg.bg }]}>
+                  <Ionicons name={stat.highlight ? 'trending-down' as IoniconName : cfg.icon} size={16} color={stat.highlight ? Colors.success : cfg.color} />
+                </View>
+                <Text style={[styles.statValue, stat.highlight && { color: Colors.success }]}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            );
+          })}
         </View>
 
-        <Text style={styles.sectionTitle}>Fitness Details</Text>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionAccent} />
+          <Text style={styles.sectionTitle}>Fitness Details</Text>
+        </View>
         <View style={styles.detailsCard}>
           {(([
-            { icon: 'calendar-outline', label: 'Current Week', value: `Week ${weekNumber}` },
-            { icon: 'flame-outline', label: 'Daily Calories', value: `${plan.dailyCalories} kcal` },
-            { icon: 'barbell-outline', label: 'Protein Target', value: `${plan.proteinGrams}g` },
-            { icon: 'scale-outline', label: 'Starting Weight', value: `${profile.weightKg} kg` },
-            { icon: 'body-outline', label: 'Experience', value: profile.experience === 'beginner' ? 'Beginner' : profile.experience === 'some' ? 'Intermediate' : 'Advanced' },
-          ] as { icon: IoniconName; label: string; value: string }[])).map((row, i, arr) => (
+            { icon: 'flame-outline', label: 'Daily Calories', value: `${plan.dailyCalories} kcal`, color: Colors.primary, bg: 'rgba(74,222,128,0.1)' },
+            { icon: 'barbell-outline', label: 'Protein Target', value: `${plan.proteinGrams}g`, color: Colors.accent, bg: 'rgba(0,212,255,0.1)' },
+            { icon: 'scale-outline', label: 'Starting Weight', value: `${profile.weightKg} kg`, color: Colors.violet, bg: 'rgba(167,139,250,0.1)' },
+            { icon: 'calendar-outline', label: 'Current Week', value: `Week ${weekNumber}`, color: Colors.amber, bg: 'rgba(245,158,11,0.1)' },
+            { icon: 'body-outline', label: 'Experience', value: profile.experience === 'beginner' ? 'Beginner' : profile.experience === 'some' ? 'Intermediate' : 'Advanced', color: Colors.textSecondary, bg: Colors.surface },
+          ] as { icon: IoniconName; label: string; value: string; color: string; bg: string }[])).map((row, i, arr) => (
             <View key={row.label}>
               <View style={styles.detailRow}>
-                <View style={styles.detailIconWrap}>
-                  <Ionicons name={row.icon} size={15} color={Colors.primary} />
+                <View style={[styles.detailIconWrap, { backgroundColor: row.bg }]}>
+                  <Ionicons name={row.icon} size={15} color={row.color} />
                 </View>
                 <Text style={styles.detailLabel}>{row.label}</Text>
                 <Text style={styles.detailValue}>{row.value}</Text>
@@ -274,17 +281,28 @@ export default function ProfileScreen() {
 
         {weightData.length > 1 && (
           <>
-            <Text style={styles.sectionTitle}>Weight Trend</Text>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionAccent, { backgroundColor: Colors.primary }]} />
+              <Text style={styles.sectionTitle}>Weight Trend</Text>
+              <Text style={styles.sectionSubLabel}>
+                {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)} kg total
+              </Text>
+            </View>
             <View style={styles.chartCard}>
               <WeightAreaChart data={weightData} minWeight={minWeight} maxWeight={maxWeight} weightRange={weightRange} />
             </View>
           </>
         )}
 
-        <Text style={styles.sectionTitle}>Check-in History</Text>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionAccent, { backgroundColor: Colors.violet }]} />
+          <Text style={styles.sectionTitle}>Check-in History</Text>
+        </View>
         {checkIns.length === 0 ? (
           <View style={styles.emptyCheckins}>
-            <Ionicons name="clipboard-outline" size={32} color={Colors.textMuted} />
+            <View style={styles.emptyCheckinIcon}>
+              <Ionicons name="clipboard-outline" size={28} color={Colors.textMuted} />
+            </View>
             <Text style={styles.emptyCheckinsText}>No check-ins yet</Text>
             <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/check-in'); }} style={styles.firstCheckInBtn}>
               <Text style={styles.firstCheckInText}>Submit First Check-in</Text>
@@ -294,23 +312,25 @@ export default function ProfileScreen() {
           checkIns.slice().reverse().map((c, i) => (
             <View key={i} style={styles.checkInCard}>
               <View style={styles.checkInHeader}>
-                <Text style={styles.checkInWeek}>Week {c.weekNumber}</Text>
+                <View style={styles.checkInWeekBadge}>
+                  <Text style={styles.checkInWeek}>Week {c.weekNumber}</Text>
+                </View>
                 <Text style={styles.checkInDate}>{new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
               </View>
               <View style={styles.checkInStats}>
                 {(([
-                  { icon: 'scale-outline', value: `${c.weightKg} kg` },
-                  { icon: 'checkmark-circle-outline', value: `${c.adherencePercent}%` },
-                  { icon: 'flash-outline', value: c.energyLevel },
-                ] as { icon: IoniconName; value: string }[])).map((s, si) => (
+                  { icon: 'scale-outline', value: `${c.weightKg} kg`, color: Colors.primary },
+                  { icon: 'checkmark-circle-outline', value: `${c.adherencePercent}%`, color: Colors.accent },
+                  { icon: 'flash-outline', value: c.energyLevel, color: Colors.amber },
+                ] as { icon: IoniconName; value: string; color: string }[])).map((s, si) => (
                   <View key={si} style={styles.checkInStat}>
-                    <Ionicons name={s.icon} size={14} color={Colors.textMuted} />
+                    <Ionicons name={s.icon} size={14} color={s.color} />
                     <Text style={styles.checkInStatText}>{s.value}</Text>
                   </View>
                 ))}
                 {c.waistCm ? (
                   <View style={styles.checkInStat}>
-                    <MaterialCommunityIcons name="tape-measure" size={14} color={Colors.textMuted} />
+                    <MaterialCommunityIcons name="tape-measure" size={14} color={Colors.violet} />
                     <Text style={styles.checkInStatText}>{c.waistCm} cm</Text>
                   </View>
                 ) : null}
@@ -338,8 +358,8 @@ export default function ProfileScreen() {
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
-              <Pressable onPress={() => !saving && setShowEditModal(false)}>
-                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              <Pressable onPress={() => !saving && setShowEditModal(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={18} color={Colors.textSecondary} />
               </Pressable>
             </View>
             <Text style={styles.inputLabel}>Name</Text>
@@ -377,7 +397,7 @@ const styles = StyleSheet.create({
   profileHeader: {
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   editBtn: {
     position: 'absolute',
@@ -385,7 +405,7 @@ const styles = StyleSheet.create({
     right: 20,
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: 12,
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -394,24 +414,24 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   avatarRing: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     padding: 2,
     marginBottom: 14,
   },
   avatarGradient: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    padding: 2,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    padding: 3,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInner: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
     backgroundColor: Colors.card,
     justifyContent: 'center',
     alignItems: 'center',
@@ -431,15 +451,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
-    marginTop: 3,
+    marginTop: 4,
   },
   goalBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: 'rgba(74,222,128,0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 20,
     marginTop: 12,
     borderWidth: 1,
@@ -447,31 +467,37 @@ const styles = StyleSheet.create({
   },
   goalBadgeText: {
     fontSize: 12,
-    fontFamily: 'Rubik_500Medium',
+    fontFamily: 'Rubik_600SemiBold',
     color: Colors.primary,
   },
   statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 20,
-    gap: 8,
+    gap: 10,
     marginBottom: 28,
   },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 0,
-  },
   statCard: {
-    flex: 1,
+    width: '47%',
     backgroundColor: Colors.card,
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
+    borderRadius: 18,
+    padding: 16,
+    alignItems: 'flex-start',
+    gap: 6,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   statCardPositive: {
     borderColor: 'rgba(16,185,129,0.3)',
-    backgroundColor: 'rgba(16,185,129,0.05)',
+    backgroundColor: 'rgba(16,185,129,0.04)',
+  },
+  statIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   statValue: {
     fontSize: 20,
@@ -479,20 +505,35 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
-    marginTop: 3,
-    textAlign: 'center',
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.textSecondary,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 12,
+    gap: 8,
+  },
+  sectionAccent: {
+    width: 3,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: Colors.primary,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    flex: 1,
+  },
+  sectionSubLabel: {
+    fontSize: 12,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.primary,
   },
   detailsCard: {
     marginHorizontal: 20,
@@ -510,10 +551,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   detailIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    backgroundColor: 'rgba(74,222,128,0.1)',
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -547,7 +587,7 @@ const styles = StyleSheet.create({
   chartLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 4,
+    paddingTop: 6,
   },
   chartLabel: {
     fontSize: 10,
@@ -557,8 +597,20 @@ const styles = StyleSheet.create({
   emptyCheckins: {
     alignItems: 'center',
     paddingVertical: 28,
-    gap: 8,
+    gap: 10,
     marginBottom: 24,
+    marginHorizontal: 20,
+  },
+  emptyCheckinIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
   },
   emptyCheckinsText: {
     fontSize: 14,
@@ -566,22 +618,24 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   firstCheckInBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    marginTop: 8,
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.2)',
   },
   firstCheckInText: {
     fontSize: 13,
     fontFamily: 'Rubik_600SemiBold',
-    color: Colors.black,
+    color: Colors.primary,
   },
   checkInCard: {
     marginHorizontal: 20,
     backgroundColor: Colors.card,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -589,12 +643,21 @@ const styles = StyleSheet.create({
   checkInHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  checkInWeekBadge: {
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.2)',
   },
   checkInWeek: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
+    color: Colors.primary,
   },
   checkInDate: {
     fontSize: 12,
@@ -609,10 +672,10 @@ const styles = StyleSheet.create({
   checkInStat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   checkInStatText: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Rubik_500Medium',
     color: Colors.textSecondary,
   },
@@ -667,8 +730,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: Colors.cardElevated,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 24,
     paddingTop: 12,
     borderWidth: 1,
@@ -676,7 +739,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderStrong,
   },
   modalHandle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: Colors.textMuted,
@@ -690,13 +753,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 17,
-    fontFamily: 'Rubik_600SemiBold',
+    fontSize: 20,
+    fontFamily: 'Rubik_700Bold',
     color: Colors.text,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   inputLabel: {
     fontSize: 11,
-    fontFamily: 'Rubik_500Medium',
+    fontFamily: 'Rubik_600SemiBold',
     color: Colors.textMuted,
     marginBottom: 7,
     textTransform: 'uppercase',
@@ -704,7 +775,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 15,
@@ -732,7 +803,7 @@ const styles = StyleSheet.create({
   saveBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
@@ -745,7 +816,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 15,
-    fontFamily: 'Rubik_600SemiBold',
+    fontFamily: 'Rubik_700Bold',
     color: Colors.black,
   },
 });

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import Colors from '@/constants/colors';
@@ -60,12 +61,12 @@ function MealCard({ meal, index }: MealCardProps) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setExpanded(!expanded);
       }}
-      style={styles.mealCard}
+      style={({ pressed }) => [styles.mealCard, pressed && { opacity: 0.95 }]}
     >
-      <View style={[styles.mealAccent, { backgroundColor: accentColor }]} />
+      <View style={[styles.mealTopBorder, { backgroundColor: accentColor }]} />
       <View style={styles.mealCardInner}>
         <View style={styles.mealHeader}>
-          <View style={[styles.mealIconContainer, { backgroundColor: accentColor + '18' }]}>
+          <View style={[styles.mealIconContainer, { backgroundColor: accentColor + '20' }]}>
             <Ionicons name={iconName} size={18} color={accentColor} />
           </View>
           <View style={styles.mealHeaderInfo}>
@@ -76,12 +77,13 @@ function MealCard({ meal, index }: MealCardProps) {
             <Text style={[styles.mealCalories, { color: accentColor }]}>{meal.total_calories}</Text>
             <Text style={styles.mealCaloriesLabel}>kcal</Text>
           </View>
-          <Ionicons
-            name={expanded ? 'chevron-up' : 'chevron-down'}
-            size={16}
-            color={Colors.textMuted}
-            style={{ marginLeft: 8 }}
-          />
+          <View style={[styles.chevronWrap, expanded && styles.chevronWrapExpanded]}>
+            <Ionicons
+              name={expanded ? 'chevron-up' : 'chevron-down'}
+              size={14}
+              color={expanded ? accentColor : Colors.textMuted}
+            />
+          </View>
         </View>
 
         {expanded && (
@@ -171,7 +173,12 @@ export default function DietScreen() {
         </View>
         <View style={styles.paywallContainer}>
           <View style={styles.paywallIconWrap}>
-            <Ionicons name="lock-closed" size={36} color={Colors.primary} />
+            <LinearGradient
+              colors={['rgba(74,222,128,0.2)', 'rgba(74,222,128,0.05)']}
+              style={styles.paywallIconGradient}
+            >
+              <Ionicons name="lock-closed" size={32} color={Colors.primary} />
+            </LinearGradient>
           </View>
           <Text style={styles.paywallTitle}>Premium Feature</Text>
           <Text style={styles.paywallSubtitle}>
@@ -181,8 +188,10 @@ export default function DietScreen() {
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/upgrade'); }}
             style={({ pressed }) => [styles.paywallBtn, pressed && { opacity: 0.85 }]}
           >
-            <Ionicons name="flash" size={18} color={Colors.black} />
-            <Text style={styles.paywallBtnText}>Upgrade to Premium</Text>
+            <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.paywallBtnGradient}>
+              <Ionicons name="flash" size={18} color={Colors.black} />
+              <Text style={styles.paywallBtnText}>Upgrade to Premium</Text>
+            </LinearGradient>
           </Pressable>
           <Text style={styles.paywallNote}>Workouts and manual calorie tracking are always free</Text>
         </View>
@@ -251,8 +260,10 @@ export default function DietScreen() {
             onPress={handleGenerate}
             style={({ pressed }) => [styles.generateLargeBtn, pressed && styles.pressed]}
           >
-            <Ionicons name="sparkles" size={18} color={Colors.black} />
-            <Text style={styles.generateLargeBtnText}>Generate My Plan</Text>
+            <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.generateLargeBtnGradient}>
+              <Ionicons name="sparkles" size={18} color={Colors.black} />
+              <Text style={styles.generateLargeBtnText}>Generate My Plan</Text>
+            </LinearGradient>
           </Pressable>
         </View>
       )}
@@ -261,31 +272,39 @@ export default function DietScreen() {
         <>
           <View style={styles.macroRow}>
             {[
-              { label: 'Calories', value: String(dietPlan.dailyTotals.calories), color: Colors.primary },
-              { label: 'Protein', value: `${dietPlan.dailyTotals.protein}g`, color: Colors.accent },
-              { label: 'Carbs', value: `${dietPlan.dailyTotals.carbs}g`, color: Colors.amber },
-              { label: 'Fat', value: `${dietPlan.dailyTotals.fat}g`, color: Colors.violet },
+              { label: 'Calories', value: String(dietPlan.dailyTotals.calories), color: Colors.primary, icon: 'flame-outline' as IoniconName, bg: 'rgba(74,222,128,0.12)' },
+              { label: 'Protein', value: `${dietPlan.dailyTotals.protein}g`, color: Colors.accent, icon: 'fitness-outline' as IoniconName, bg: 'rgba(0,212,255,0.12)' },
+              { label: 'Carbs', value: `${dietPlan.dailyTotals.carbs}g`, color: Colors.amber, icon: 'leaf-outline' as IoniconName, bg: 'rgba(245,158,11,0.12)' },
+              { label: 'Fat', value: `${dietPlan.dailyTotals.fat}g`, color: Colors.violet, icon: 'water-outline' as IoniconName, bg: 'rgba(167,139,250,0.12)' },
             ].map((item) => (
               <View key={item.label} style={styles.macroPill}>
-                <View style={[styles.macroPillDot, { backgroundColor: item.color }]} />
+                <View style={[styles.macroPillIcon, { backgroundColor: item.bg }]}>
+                  <Ionicons name={item.icon} size={14} color={item.color} />
+                </View>
                 <Text style={[styles.macroPillValue, { color: item.color }]}>{item.value}</Text>
                 <Text style={styles.macroPillLabel}>{item.label}</Text>
               </View>
             ))}
           </View>
 
-          <Text style={styles.sectionTitle}>Meals</Text>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionAccent} />
+            <Text style={styles.sectionTitle}>Meals</Text>
+          </View>
           {dietPlan.meals.map((meal, i) => (
             <MealCard key={i} meal={meal} index={i} />
           ))}
 
           {dietPlan.notes && dietPlan.notes.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Tips</Text>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionAccent, { backgroundColor: Colors.accent }]} />
+                <Text style={styles.sectionTitle}>Tips</Text>
+              </View>
               <View style={styles.notesCard}>
                 {dietPlan.notes.map((note, i) => (
                   <View key={i} style={styles.noteRow}>
-                    <Ionicons name="checkmark-circle" size={15} color={Colors.primary} />
+                    <Ionicons name="checkmark-circle" size={16} color={Colors.primary} />
                     <Text style={styles.noteText}>{note}</Text>
                   </View>
                 ))}
@@ -318,7 +337,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
     letterSpacing: -0.5,
@@ -327,7 +346,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Rubik_500Medium',
     color: Colors.primary,
-    marginTop: 2,
+    marginTop: 3,
   },
   generateBtn: {
     width: 44,
@@ -381,15 +400,16 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   paywallIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(74,222,128,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(74,222,128,0.25)',
+    marginBottom: 24,
+  },
+  paywallIconGradient: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.2)',
   },
   paywallTitle: {
     fontSize: 22,
@@ -407,14 +427,18 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   paywallBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    alignSelf: 'stretch',
+  },
+  paywallBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
+    paddingVertical: 15,
     paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginBottom: 16,
   },
   paywallBtnText: {
     fontSize: 16,
@@ -457,14 +481,18 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   generateLargeBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 24,
+    alignSelf: 'stretch',
+  },
+  generateLargeBtnGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.primary,
     paddingHorizontal: 24,
-    paddingVertical: 13,
-    borderRadius: 16,
-    marginTop: 24,
+    paddingVertical: 14,
   },
   pressed: {
     opacity: 0.8,
@@ -479,75 +507,89 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   macroPill: {
     flex: 1,
     backgroundColor: Colors.card,
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  macroPillDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  macroPillIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
   },
   macroPillValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Rubik_700Bold',
+    lineHeight: 17,
   },
   macroPillLabel: {
     fontSize: 10,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.textSecondary,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 12,
+    gap: 8,
+  },
+  sectionAccent: {
+    width: 3,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: Colors.primary,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   mealCard: {
     marginHorizontal: 20,
     backgroundColor: Colors.card,
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
-    flexDirection: 'row',
   },
-  mealAccent: {
-    width: 3,
+  mealTopBorder: {
+    height: 3,
   },
   mealCardInner: {
-    flex: 1,
-    padding: 14,
+    padding: 16,
   },
   mealHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
   mealIconContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   mealHeaderInfo: {
     flex: 1,
   },
   mealName: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Rubik_600SemiBold',
     color: Colors.text,
   },
@@ -561,7 +603,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   mealCalories: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Rubik_700Bold',
   },
   mealCaloriesLabel: {
@@ -569,22 +611,33 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
+  chevronWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chevronWrapExpanded: {
+    backgroundColor: 'rgba(74,222,128,0.1)',
+  },
   foodsList: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 14,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   foodItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 7,
+    paddingVertical: 8,
     gap: 10,
   },
   foodDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   foodInfo: {
     flex: 1,
@@ -618,7 +671,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 10,
-    marginTop: 4,
+    marginTop: 6,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
@@ -639,7 +692,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 16,
-    gap: 10,
+    gap: 12,
     marginBottom: 24,
     borderWidth: 1,
     borderColor: Colors.border,

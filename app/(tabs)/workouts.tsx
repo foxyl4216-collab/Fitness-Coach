@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -39,15 +40,17 @@ export default function WorkoutsScreen() {
       }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Week {weekNumber}</Text>
-      <View style={styles.subtitleRow}>
-        <View style={styles.pill}>
-          <Ionicons name="barbell-outline" size={12} color={Colors.primary} />
-          <Text style={styles.pillText}>{workoutDays} workouts</Text>
-        </View>
-        <View style={styles.pill}>
-          <Ionicons name="bed-outline" size={12} color={Colors.textMuted} />
-          <Text style={[styles.pillText, { color: Colors.textMuted }]}>{7 - workoutDays} rest</Text>
+      <View style={styles.headerArea}>
+        <Text style={styles.title}>Week {weekNumber}</Text>
+        <View style={styles.subtitleRow}>
+          <View style={styles.pill}>
+            <Ionicons name="barbell-outline" size={13} color={Colors.primary} />
+            <Text style={styles.pillText}>{workoutDays} workouts</Text>
+          </View>
+          <View style={[styles.pill, styles.pillMuted]}>
+            <Ionicons name="bed-outline" size={13} color={Colors.textMuted} />
+            <Text style={[styles.pillText, { color: Colors.textMuted }]}>{7 - workoutDays} rest</Text>
+          </View>
         </View>
       </View>
 
@@ -98,12 +101,21 @@ export default function WorkoutsScreen() {
                   pressed && !workout.isRestDay && styles.pressed,
                 ]}
               >
+                {isToday && (
+                  <LinearGradient
+                    colors={['rgba(74,222,128,0.08)', 'rgba(0,0,0,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 {isToday && <View style={styles.workoutCardAccent} />}
                 <View style={styles.workoutCardInner}>
                   <View style={[
                     styles.workoutIconWrap,
                     isToday && styles.workoutIconWrapToday,
                     workout.isRestDay && styles.workoutIconWrapRest,
+                    isPast && !workout.isRestDay && styles.workoutIconWrapDone,
                   ]}>
                     <Ionicons
                       name={workout.isRestDay ? 'bed-outline' : isPast ? 'checkmark-circle-outline' : 'barbell-outline'}
@@ -168,34 +180,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  headerArea: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
-    paddingHorizontal: 20,
     letterSpacing: -0.5,
   },
   subtitleRow: {
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 24,
+    marginTop: 10,
   },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: Colors.card,
+    gap: 6,
+    backgroundColor: 'rgba(74,222,128,0.1)',
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.2)',
+  },
+  pillMuted: {
+    backgroundColor: Colors.card,
     borderColor: Colors.border,
   },
   pillText: {
     fontSize: 12,
-    fontFamily: 'Rubik_500Medium',
+    fontFamily: 'Rubik_600SemiBold',
     color: Colors.primary,
   },
   emptyText: {
@@ -215,7 +232,7 @@ const styles = StyleSheet.create({
   timelineIndicator: {
     alignItems: 'center',
     width: 20,
-    paddingTop: 18,
+    paddingTop: 20,
   },
   timelineDot: {
     width: 14,
@@ -270,21 +287,21 @@ const styles = StyleSheet.create({
   workoutCard: {
     flex: 1,
     backgroundColor: Colors.card,
-    borderRadius: 16,
+    borderRadius: 18,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: 'hidden',
   },
   workoutCardToday: {
-    backgroundColor: 'rgba(74,222,128,0.06)',
-    borderColor: 'rgba(74,222,128,0.25)',
+    backgroundColor: Colors.card,
+    borderColor: 'rgba(74,222,128,0.35)',
   },
   workoutCardRest: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   workoutCardFuture: {
-    opacity: 0.75,
+    opacity: 0.7,
   },
   workoutCardAccent: {
     position: 'absolute',
@@ -297,8 +314,8 @@ const styles = StyleSheet.create({
   workoutCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    paddingLeft: 16,
+    padding: 16,
+    paddingLeft: 18,
     gap: 12,
   },
   pressed: {
@@ -306,19 +323,24 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   workoutIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     backgroundColor: Colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   workoutIconWrapToday: {
     backgroundColor: 'rgba(74,222,128,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.2)',
   },
   workoutIconWrapRest: {
     backgroundColor: Colors.surface,
     opacity: 0.7,
+  },
+  workoutIconWrapDone: {
+    backgroundColor: 'rgba(16,185,129,0.1)',
   },
   workoutInfo: {
     flex: 1,
@@ -332,6 +354,7 @@ const styles = StyleSheet.create({
   },
   workoutDayToday: {
     color: Colors.primary,
+    fontFamily: 'Rubik_700Bold',
   },
   workoutDayRest: {
     color: Colors.textMuted,
@@ -349,7 +372,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    marginTop: 4,
+    marginTop: 5,
   },
   workoutMetaText: {
     fontSize: 12,

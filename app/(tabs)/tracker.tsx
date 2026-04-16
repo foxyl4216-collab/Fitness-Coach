@@ -14,8 +14,9 @@ import {
   PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -32,8 +33,8 @@ function CalorieRingSvg({ progress, remaining, isOver }: {
   remaining: number;
   isOver: boolean;
 }) {
-  const size = 120;
-  const strokeWidth = 9;
+  const size = 160;
+  const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference * (1 - Math.min(1, Math.max(0, progress)));
@@ -41,10 +42,16 @@ function CalorieRingSvg({ progress, remaining, isOver }: {
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
-        <Circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={Colors.surface} strokeWidth={strokeWidth} />
+        <Defs>
+          <SvgGradient id="trackerRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={isOver ? Colors.error : Colors.primary} />
+            <Stop offset="100%" stopColor={isOver ? '#FF6B6B' : Colors.accent} />
+          </SvgGradient>
+        </Defs>
+        <Circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
         <Circle
           cx={size / 2} cy={size / 2} r={radius} fill="none"
-          stroke={strokeColor} strokeWidth={strokeWidth}
+          stroke="url(#trackerRingGrad)" strokeWidth={strokeWidth}
           strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
@@ -52,7 +59,7 @@ function CalorieRingSvg({ progress, remaining, isOver }: {
       </Svg>
       <View style={{ alignItems: 'center' }}>
         <Text style={[styles.ringValue, isOver && { color: Colors.error }]}>{remaining}</Text>
-        <Text style={styles.ringLabel}>{isOver ? 'over' : 'left'}</Text>
+        <Text style={styles.ringLabel}>{isOver ? 'over today' : 'kcal left'}</Text>
       </View>
     </View>
   );
@@ -108,6 +115,7 @@ export default function TrackerScreen() {
   const remaining = Math.max(0, dailyTarget - totalCalories);
   const progress = totalCalories / dailyTarget;
   const isOver = totalCalories > dailyTarget;
+  const overAmount = isOver ? totalCalories - dailyTarget : 0;
 
   const handleAdd = async () => {
     if (!foodName.trim() || !foodCalories.trim()) return;
@@ -230,69 +238,68 @@ export default function TrackerScreen() {
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom + 16;
   const canAdd = !!foodName.trim() && !!foodCalories.trim();
 
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
   return (
     <View style={styles.container}>
-      {/* Fixed header */}
       <View style={[styles.header, { paddingTop: topPad }]}>
-        <Text style={styles.title}>Tracker</Text>
-        <View style={styles.topActions}>
-          <Pressable onPress={handleShowScanOptions} style={[styles.iconBtn, styles.iconBtnOutline]} disabled={isScanning}>
-            {isScanning ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <View>
-                <Ionicons name="camera-outline" size={24} color={Colors.primary} />
-                {!isPremium && (
-                  <View style={styles.lockBadge}>
-                    <Ionicons name="lock-closed" size={7} color={Colors.black} />
-                  </View>
-                )}
-              </View>
-            )}
-          </Pressable>
-          <Pressable
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
-            style={[styles.iconBtn, styles.iconBtnPrimary]}
-          >
-            <Ionicons name="add" size={26} color={Colors.black} />
-          </Pressable>
+        <View>
+          <Text style={styles.title}>Tracker</Text>
+          <Text style={styles.dateLabel}>{dateLabel}</Text>
         </View>
+        <Pressable onPress={handleShowScanOptions} style={[styles.scanBtn]} disabled={isScanning}>
+          {isScanning ? (
+            <ActivityIndicator size="small" color={Colors.primary} />
+          ) : (
+            <View>
+              <Ionicons name="camera-outline" size={22} color={Colors.primary} />
+              {!isPremium && (
+                <View style={styles.lockBadge}>
+                  <Ionicons name="lock-closed" size={7} color={Colors.black} />
+                </View>
+              )}
+            </View>
+          )}
+        </Pressable>
       </View>
 
-      {/* Scrollable content — swipe down to see food log */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 20 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 80 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Calorie summary card */}
         <View style={styles.summaryCard}>
-          <CalorieRingSvg progress={progress} remaining={isOver ? totalCalories - dailyTarget : remaining} isOver={isOver} />
-          <View style={styles.summaryStats}>
-            {[
-              { value: String(totalCalories), label: 'eaten', color: isOver ? Colors.error : Colors.primary },
-              { value: String(dailyTarget), label: 'target', color: Colors.accent },
-              { value: `${totalProtein}g`, label: 'protein', color: Colors.violet },
-            ].map((stat) => (
-              <View key={stat.label} style={styles.summaryStat}>
-                <Text style={[styles.summaryStatValue, { color: stat.color }]}>{stat.value}</Text>
-                <Text style={styles.summaryStatLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
+          <LinearGradient
+            colors={isOver
+              ? ['rgba(239,68,68,0.08)', 'rgba(0,0,0,0)']
+              : ['rgba(74,222,128,0.08)', 'rgba(0,0,0,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.summaryGradient}
+          >
+            <CalorieRingSvg progress={progress} remaining={isOver ? overAmount : remaining} isOver={isOver} />
+            <View style={styles.summaryStatsRow}>
+              {[
+                { value: String(totalCalories), label: 'eaten', color: isOver ? Colors.error : Colors.primary },
+                { value: String(dailyTarget), label: 'target', color: Colors.accent },
+                { value: `${totalProtein}g`, label: 'protein', color: Colors.violet },
+              ].map((stat) => (
+                <View key={stat.label} style={styles.summaryStat}>
+                  <Text style={[styles.summaryStatValue, { color: stat.color }]}>{stat.value}</Text>
+                  <Text style={styles.summaryStatLabel}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+          </LinearGradient>
         </View>
 
-        {/* Scroll hint */}
-        <View style={styles.scrollHint}>
-          <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
-          <Text style={styles.scrollHintText}>Swipe down to see your food log</Text>
-          <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
-        </View>
-
-        {/* Food log section */}
         <View style={styles.foodLogSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Food Log</Text>
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionAccent} />
+              <Text style={styles.sectionTitle}>Food Log</Text>
+            </View>
             {todayFoods.length > 0 && (
               <Text style={styles.sectionCount}>{todayFoods.length} item{todayFoods.length !== 1 ? 's' : ''}</Text>
             )}
@@ -300,33 +307,34 @@ export default function TrackerScreen() {
 
           {todayFoods.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="restaurant-outline" size={36} color={Colors.textMuted} />
-              <Text style={styles.emptyText}>No food logged today</Text>
-              <Text style={styles.emptySubtext}>Tap + to add your meals</Text>
-              <Pressable
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
-                style={styles.emptyAddBtn}
-              >
-                <Ionicons name="add" size={18} color={Colors.black} />
-                <Text style={styles.emptyAddBtnText}>Add Food</Text>
-              </Pressable>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="restaurant-outline" size={32} color={Colors.textMuted} />
+              </View>
+              <Text style={styles.emptyText}>Nothing logged yet</Text>
+              <Text style={styles.emptySubtext}>Tap the + button to add your first meal</Text>
             </View>
           ) : (
             todayFoods.map((item) => (
               <View key={item.id} style={styles.foodItemRow}>
-                <View style={styles.foodItemLeft}>
-                  <View style={[styles.foodDot, { backgroundColor: item.source === 'camera' ? Colors.accent : Colors.primary }]} />
-                  <View style={styles.foodInfo}>
-                    <Text style={styles.foodName}>{item.name}</Text>
-                    {item.protein ? <Text style={styles.foodProtein}>{item.protein}g protein</Text> : null}
-                  </View>
+                <View style={[styles.foodSourceBadge, {
+                  backgroundColor: item.source === 'camera' ? 'rgba(0,212,255,0.12)' : 'rgba(74,222,128,0.1)',
+                }]}>
+                  <Ionicons
+                    name={item.source === 'camera' ? 'camera-outline' : 'restaurant-outline'}
+                    size={14}
+                    color={item.source === 'camera' ? Colors.accent : Colors.primary}
+                  />
+                </View>
+                <View style={styles.foodInfo}>
+                  <Text style={styles.foodName}>{item.name}</Text>
+                  {item.protein ? <Text style={styles.foodProtein}>{item.protein}g protein</Text> : null}
                 </View>
                 <View style={styles.foodItemRight}>
-                  <Text style={styles.foodCal}>{item.calories}</Text>
+                  <Text style={[styles.foodCal, isOver && item === todayFoods[0] && { color: Colors.error }]}>{item.calories}</Text>
                   <Text style={styles.foodCalLabel}>kcal</Text>
                 </View>
                 <Pressable onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
-                  <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
+                  <Ionicons name="trash-outline" size={15} color={Colors.textMuted} />
                 </Pressable>
               </View>
             ))
@@ -334,7 +342,17 @@ export default function TrackerScreen() {
         </View>
       </ScrollView>
 
-      {/* Add food modal */}
+      <View style={[styles.fab, { bottom: bottomPad + 16 }]}>
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openModal(); }}
+          style={({ pressed }) => [styles.fabBtn, pressed && { transform: [{ scale: 0.93 }] }]}
+        >
+          <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
+            <Ionicons name="add" size={28} color={Colors.black} />
+          </LinearGradient>
+        </Pressable>
+      </View>
+
       <Modal visible={showAddModal} animationType="none" transparent>
         <View style={styles.modalOverlay}>
           <Animated.View style={[styles.modalContent, { paddingBottom: bottomPad + 8, transform: [{ translateY: slideY }] }]}>
@@ -343,8 +361,8 @@ export default function TrackerScreen() {
             </View>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Food</Text>
-              <Pressable onPress={closeModal}>
-                <Ionicons name="close" size={22} color={Colors.textSecondary} />
+              <Pressable onPress={closeModal} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={18} color={Colors.textSecondary} />
               </Pressable>
             </View>
 
@@ -355,7 +373,7 @@ export default function TrackerScreen() {
                   {savedFoods.map((food, i) => (
                     <Pressable key={i} onPress={() => handleQuickAdd(food)} style={styles.quickAddChip}>
                       <Text style={styles.quickAddName}>{food.name}</Text>
-                      <Text style={styles.quickAddCal}>{food.calories}</Text>
+                      <Text style={styles.quickAddCal}>{food.calories} kcal</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -381,15 +399,16 @@ export default function TrackerScreen() {
                 <Ionicons name="heart-outline" size={16} color={Colors.secondary} />
                 <Text style={styles.saveBtnText}>Save</Text>
               </Pressable>
-              <Pressable onPress={handleAdd} style={[styles.addBtn, !canAdd && styles.btnDisabled]} disabled={!canAdd}>
-                <Text style={styles.addBtnText}>Add Entry</Text>
+              <Pressable onPress={handleAdd} disabled={!canAdd} style={({ pressed }) => [styles.addBtnWrap, pressed && { opacity: 0.9 }, !canAdd && styles.btnDisabled]}>
+                <LinearGradient colors={['#4ADE80', '#22C55E']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtnGradient}>
+                  <Text style={styles.addBtnText}>Add Entry</Text>
+                </LinearGradient>
               </Pressable>
             </View>
           </Animated.View>
         </View>
       </Modal>
 
-      {/* Camera modal (native only) */}
       {Platform.OS !== 'web' && (
         <Modal visible={showCamera} animationType="slide">
           <View style={styles.cameraContainer}>
@@ -418,35 +437,33 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 14,
     backgroundColor: Colors.background,
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
     letterSpacing: -0.5,
   },
-  topActions: {
-    flexDirection: 'row',
-    gap: 8,
+  dateLabel: {
+    fontSize: 13,
+    fontFamily: 'Rubik_400Regular',
+    color: Colors.textMuted,
+    marginTop: 3,
   },
-  iconBtn: {
+  scanBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  iconBtnOutline: {
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: 'rgba(74,222,128,0.3)',
-  },
-  iconBtnPrimary: {
-    backgroundColor: Colors.primary,
+    marginTop: 4,
   },
   lockBadge: {
     position: 'absolute',
@@ -467,56 +484,47 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   summaryCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.15)',
     backgroundColor: Colors.card,
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
+  },
+  summaryGradient: {
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
     gap: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 10,
   },
   ringValue: {
-    fontSize: 20,
+    fontSize: 26,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
-    lineHeight: 22,
+    lineHeight: 28,
+    textAlign: 'center',
   },
   ringLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
-    marginTop: 2,
+    marginTop: 3,
+    textAlign: 'center',
   },
-  summaryStats: {
-    flex: 1,
-    gap: 12,
+  summaryStatsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-around',
   },
   summaryStat: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   summaryStatValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'Rubik_700Bold',
-    width: 60,
   },
   summaryStatLabel: {
-    fontSize: 12,
-    fontFamily: 'Rubik_400Regular',
-    color: Colors.textMuted,
-  },
-  scrollHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    marginBottom: 6,
-  },
-  scrollHintText: {
     fontSize: 11,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
@@ -528,15 +536,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionAccent: {
+    width: 3,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: Colors.primary,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
+    fontSize: 14,
+    fontFamily: 'Rubik_700Bold',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   sectionCount: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
@@ -544,6 +565,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 48,
     gap: 8,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   emptyText: {
     fontSize: 15,
@@ -554,42 +586,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
-  },
-  emptyAddBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 14,
-  },
-  emptyAddBtnText: {
-    fontSize: 14,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.black,
+    textAlign: 'center',
   },
   foodItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.card,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: Colors.border,
+    gap: 12,
   },
-  foodItemLeft: {
-    flex: 1,
-    flexDirection: 'row',
+  foodSourceBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
-  },
-  foodDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
   },
   foodInfo: { flex: 1 },
   foodName: {
@@ -601,14 +616,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
-    marginTop: 1,
+    marginTop: 2,
   },
   foodItemRight: {
     alignItems: 'flex-end',
-    marginRight: 12,
+    marginRight: 8,
   },
   foodCal: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'Rubik_700Bold',
     color: Colors.text,
   },
@@ -617,7 +632,35 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_400Regular',
     color: Colors.textMuted,
   },
-  deleteButton: { padding: 4 },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+  },
+  fabBtn: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    overflow: 'hidden',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fabGradient: {
+    width: 58,
+    height: 58,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -625,8 +668,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: Colors.cardElevated,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 20,
     paddingTop: 12,
     borderWidth: 1,
@@ -638,7 +681,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   modalHandle: {
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: Colors.textMuted,
@@ -650,22 +693,30 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 18,
-    fontFamily: 'Rubik_600SemiBold',
+    fontSize: 20,
+    fontFamily: 'Rubik_700Bold',
     color: Colors.text,
   },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   quickAddLabel: {
-    fontSize: 12,
-    fontFamily: 'Rubik_600SemiBold',
+    fontSize: 11,
+    fontFamily: 'Rubik_700Bold',
     color: Colors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    letterSpacing: 0.8,
+    marginBottom: 10,
   },
   quickAddRow: { marginBottom: 20 },
   quickAddChip: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginRight: 8,
@@ -687,7 +738,7 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: 14 },
   inputLabel: {
     fontSize: 11,
-    fontFamily: 'Rubik_500Medium',
+    fontFamily: 'Rubik_600SemiBold',
     color: Colors.textMuted,
     marginBottom: 7,
     textTransform: 'uppercase',
@@ -695,9 +746,9 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     fontSize: 15,
     fontFamily: 'Rubik_400Regular',
     color: Colors.text,
@@ -719,8 +770,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 13,
-    borderRadius: 14,
+    paddingVertical: 14,
+    borderRadius: 16,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -730,17 +781,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Rubik_500Medium',
     color: Colors.secondary,
   },
-  addBtn: {
+  addBtnWrap: {
     flex: 2,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  addBtnGradient: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 13,
-    borderRadius: 14,
-    backgroundColor: Colors.primary,
+    paddingVertical: 14,
   },
   addBtnText: {
     fontSize: 15,
-    fontFamily: 'Rubik_600SemiBold',
+    fontFamily: 'Rubik_700Bold',
     color: Colors.black,
   },
   btnDisabled: { opacity: 0.4 },
