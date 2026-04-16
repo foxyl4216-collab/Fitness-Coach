@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -60,6 +60,126 @@ function CalorieRingSvg({ progress, remaining, isOver }: {
     </View>
   );
 }
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function buildDateList(): { iso: string; dayName: string; dayNum: number; monthShort: string }[] {
+  const today = new Date();
+  const items = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    items.push({
+      iso: d.toISOString().split('T')[0],
+      dayName: DAY_NAMES[d.getDay()],
+      dayNum: d.getDate(),
+      monthShort: d.toLocaleString('default', { month: 'short' }),
+    });
+  }
+  return items;
+}
+
+function DateStrip({ selectedDate, onSelect }: { selectedDate: string; onSelect: (iso: string) => void }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const dates = useMemo(() => buildDateList(), []);
+  const todayIso = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    const idx = dates.findIndex(d => d.iso === selectedDate);
+    if (idx >= 0 && scrollRef.current) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ x: Math.max(0, idx - 2) * 60, animated: true });
+      }, 100);
+    }
+  }, [selectedDate]);
+
+  return (
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={stripStyles.strip}
+    >
+      {dates.map(item => {
+        const isSelected = item.iso === selectedDate;
+        const isToday = item.iso === todayIso;
+        return (
+          <Pressable
+            key={item.iso}
+            onPress={() => { onSelect(item.iso); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            style={[stripStyles.dayItem, isSelected && stripStyles.dayItemSelected]}
+          >
+            <Text style={[stripStyles.dayName, isSelected && stripStyles.dayNameSelected]}>
+              {item.dayName}
+            </Text>
+            <View style={[stripStyles.dayNumCircle, isSelected && stripStyles.dayNumCircleSelected]}>
+              <Text style={[stripStyles.dayNum, isSelected && stripStyles.dayNumSelected]}>
+                {item.dayNum}
+              </Text>
+            </View>
+            {isToday && <View style={[stripStyles.todayDot, isSelected && stripStyles.todayDotSelected]} />}
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+const stripStyles = StyleSheet.create({
+  strip: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  dayItem: {
+    width: 52,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 16,
+    gap: 6,
+  },
+  dayItemSelected: {
+    backgroundColor: 'rgba(74,222,128,0.12)',
+  },
+  dayName: {
+    fontSize: 11,
+    fontFamily: 'Rubik_500Medium',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  dayNameSelected: {
+    color: Colors.primary,
+  },
+  dayNumCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayNumCircleSelected: {
+    backgroundColor: Colors.primary,
+  },
+  dayNum: {
+    fontSize: 15,
+    fontFamily: 'Rubik_600SemiBold',
+    color: Colors.textSecondary,
+  },
+  dayNumSelected: {
+    color: Colors.black,
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.textMuted,
+    marginTop: -2,
+  },
+  todayDotSelected: {
+    backgroundColor: Colors.primary,
+  },
+});
 
 export default function TrackerScreen() {
   const insets = useSafeAreaInsets();
@@ -240,20 +360,6 @@ export default function TrackerScreen() {
     }
   };
 
-  const dateLabels = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    if (selectedDate === today) return 'Today';
-    if (selectedDate === yesterday) return 'Yesterday';
-    return selectedDate;
-  }, [selectedDate]);
-
-  const navigateDate = (direction: number) => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() + direction);
-    setSelectedDate(d.toISOString().split('T')[0]);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
 
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top + 16 }]}>
@@ -283,15 +389,7 @@ export default function TrackerScreen() {
         </View>
       </View>
 
-      <View style={styles.dateNav}>
-        <Pressable onPress={() => navigateDate(-1)} style={styles.dateArrow}>
-          <Ionicons name="chevron-back" size={18} color={Colors.textSecondary} />
-        </Pressable>
-        <Text style={styles.dateLabel}>{dateLabels}</Text>
-        <Pressable onPress={() => navigateDate(1)} style={styles.dateArrow}>
-          <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
-        </Pressable>
-      </View>
+      <DateStrip selectedDate={selectedDate} onSelect={setSelectedDate} />
 
       <View style={styles.summaryCard}>
         <CalorieRingSvg progress={progress} remaining={isOver ? totalCalories - dailyTarget : remaining} isOver={isOver} />
@@ -506,28 +604,6 @@ const styles = StyleSheet.create({
     height: 11,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  dateNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    marginBottom: 14,
-  },
-  dateArrow: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dateLabel: {
-    fontSize: 15,
-    fontFamily: 'Rubik_600SemiBold',
-    color: Colors.text,
-    minWidth: 100,
-    textAlign: 'center',
   },
   summaryCard: {
     marginHorizontal: 20,
