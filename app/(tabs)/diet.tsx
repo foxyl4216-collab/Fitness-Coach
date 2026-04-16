@@ -9,7 +9,13 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,12 +61,20 @@ function MealCard({ meal, index }: MealCardProps) {
   const accentColor = MEAL_ACCENTS[meal.meal] || Colors.primary;
   const iconName = MEAL_ICONS[meal.meal] || 'restaurant-outline';
 
+  const handleToggle = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    LayoutAnimation.configureNext({
+      duration: 280,
+      create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+      update: { type: LayoutAnimation.Types.easeInEaseOut },
+      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
+    });
+    setExpanded(!expanded);
+  };
+
   return (
     <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setExpanded(!expanded);
-      }}
+      onPress={handleToggle}
       style={({ pressed }) => [styles.mealCard, pressed && { opacity: 0.95 }]}
     >
       <View style={[styles.mealTopBorder, { backgroundColor: accentColor }]} />

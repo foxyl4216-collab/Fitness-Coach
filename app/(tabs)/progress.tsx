@@ -86,10 +86,10 @@ function WeightAreaChart({
 }
 
 const STAT_CONFIGS = [
-  { icon: 'trending-down-outline' as IoniconName, color: Colors.success, bg: 'rgba(16,185,129,0.15)' },
-  { icon: 'checkmark-circle-outline' as IoniconName, color: Colors.accent, bg: 'rgba(0,212,255,0.15)' },
-  { icon: 'clipboard-outline' as IoniconName, color: Colors.violet, bg: 'rgba(167,139,250,0.15)' },
-  { icon: 'calendar-outline' as IoniconName, color: Colors.amber, bg: 'rgba(245,158,11,0.15)' },
+  { icon: 'trending-down-outline' as IoniconName, color: Colors.success, bg: 'rgba(16,185,129,0.15)', grad: ['rgba(16,185,129,0.30)', 'rgba(16,185,129,0.08)'] as const },
+  { icon: 'checkmark-circle-outline' as IoniconName, color: Colors.accent, bg: 'rgba(0,212,255,0.15)', grad: ['rgba(0,212,255,0.30)', 'rgba(0,212,255,0.08)'] as const },
+  { icon: 'clipboard-outline' as IoniconName, color: Colors.violet, bg: 'rgba(167,139,250,0.15)', grad: ['rgba(167,139,250,0.30)', 'rgba(167,139,250,0.08)'] as const },
+  { icon: 'calendar-outline' as IoniconName, color: Colors.amber, bg: 'rgba(245,158,11,0.15)', grad: ['rgba(245,158,11,0.30)', 'rgba(245,158,11,0.08)'] as const },
 ];
 
 export default function ProfileScreen() {
@@ -244,9 +244,13 @@ export default function ProfileScreen() {
             const cfg = STAT_CONFIGS[stat.configIdx];
             return (
               <View key={i} style={[styles.statCard, stat.highlight && styles.statCardPositive]}>
-                <View style={[styles.statIconWrap, { backgroundColor: stat.highlight ? 'rgba(16,185,129,0.2)' : cfg.bg }]}>
+                <LinearGradient
+                  colors={stat.highlight ? ['rgba(16,185,129,0.35)', 'rgba(16,185,129,0.10)'] : cfg.grad}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={styles.statIconWrap}
+                >
                   <Ionicons name={stat.highlight ? 'trending-down' as IoniconName : cfg.icon} size={16} color={stat.highlight ? Colors.success : cfg.color} />
-                </View>
+                </LinearGradient>
                 <Text style={[styles.statValue, stat.highlight && { color: Colors.success }]}>{stat.value}</Text>
                 <Text style={styles.statLabel}>{stat.label}</Text>
               </View>

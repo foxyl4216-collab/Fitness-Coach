@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -157,6 +158,20 @@ function FormContent({
   focusedField: 'email' | 'password' | 'confirm' | null;
   setFocusedField: (v: 'email' | 'password' | 'confirm' | null) => void;
 }) {
+  const emailGlow = useRef(new Animated.Value(0)).current;
+  const passwordGlow = useRef(new Animated.Value(0)).current;
+  const confirmGlow = useRef(new Animated.Value(0)).current;
+
+  const animIn = (anim: Animated.Value) =>
+    Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
+  const animOut = (anim: Animated.Value) =>
+    Animated.timing(anim, { toValue: 0, duration: 150, useNativeDriver: false }).start();
+
+  const mkBorder = (anim: Animated.Value) =>
+    anim.interpolate({ inputRange: [0, 1], outputRange: [Colors.border, Colors.primary] });
+  const mkBg = (anim: Animated.Value) =>
+    anim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(74,222,128,0)', 'rgba(74,222,128,0.05)'] });
+
   return (
     <>
       {error ? (
@@ -168,7 +183,7 @@ function FormContent({
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Email</Text>
-        <View style={[styles.inputContainer, focusedField === 'email' && styles.inputContainerFocused]}>
+        <Animated.View style={[styles.inputContainer, { borderColor: mkBorder(emailGlow), backgroundColor: mkBg(emailGlow) }]}>
           <Ionicons
             name="mail-outline"
             size={17}
@@ -185,15 +200,15 @@ function FormContent({
             autoCapitalize="none"
             autoCorrect={false}
             editable={!loading}
-            onFocus={() => setFocusedField('email')}
-            onBlur={() => setFocusedField(null)}
+            onFocus={() => { setFocusedField('email'); animIn(emailGlow); }}
+            onBlur={() => { setFocusedField(null); animOut(emailGlow); }}
           />
-        </View>
+        </Animated.View>
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Password</Text>
-        <View style={[styles.inputContainer, focusedField === 'password' && styles.inputContainerFocused]}>
+        <Animated.View style={[styles.inputContainer, { borderColor: mkBorder(passwordGlow), backgroundColor: mkBg(passwordGlow) }]}>
           <Ionicons
             name="lock-closed-outline"
             size={17}
@@ -208,8 +223,8 @@ function FormContent({
             placeholderTextColor={Colors.textMuted}
             secureTextEntry={!showPassword}
             editable={!loading}
-            onFocus={() => setFocusedField('password')}
-            onBlur={() => setFocusedField(null)}
+            onFocus={() => { setFocusedField('password'); animIn(passwordGlow); }}
+            onBlur={() => { setFocusedField(null); animOut(passwordGlow); }}
           />
           <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
             <Ionicons
@@ -218,12 +233,12 @@ function FormContent({
               color={Colors.textMuted}
             />
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Confirm Password</Text>
-        <View style={[styles.inputContainer, focusedField === 'confirm' && styles.inputContainerFocused]}>
+        <Animated.View style={[styles.inputContainer, { borderColor: mkBorder(confirmGlow), backgroundColor: mkBg(confirmGlow) }]}>
           <Ionicons
             name="lock-closed-outline"
             size={17}
@@ -238,10 +253,10 @@ function FormContent({
             placeholderTextColor={Colors.textMuted}
             secureTextEntry={!showPassword}
             editable={!loading}
-            onFocus={() => setFocusedField('confirm')}
-            onBlur={() => setFocusedField(null)}
+            onFocus={() => { setFocusedField('confirm'); animIn(confirmGlow); }}
+            onBlur={() => { setFocusedField(null); animOut(confirmGlow); }}
           />
-        </View>
+        </Animated.View>
       </View>
 
       <Pressable

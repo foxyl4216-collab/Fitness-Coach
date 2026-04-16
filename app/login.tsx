@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -153,6 +154,19 @@ function FormContent({
   focusedField: 'email' | 'password' | null;
   setFocusedField: (v: 'email' | 'password' | null) => void;
 }) {
+  const emailGlow = useRef(new Animated.Value(0)).current;
+  const passwordGlow = useRef(new Animated.Value(0)).current;
+
+  const animIn = (anim: Animated.Value) =>
+    Animated.timing(anim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
+  const animOut = (anim: Animated.Value) =>
+    Animated.timing(anim, { toValue: 0, duration: 150, useNativeDriver: false }).start();
+
+  const emailBorder = emailGlow.interpolate({ inputRange: [0, 1], outputRange: [Colors.border, Colors.primary] });
+  const emailBg = emailGlow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(74,222,128,0)', 'rgba(74,222,128,0.05)'] });
+  const passwordBorder = passwordGlow.interpolate({ inputRange: [0, 1], outputRange: [Colors.border, Colors.primary] });
+  const passwordBg = passwordGlow.interpolate({ inputRange: [0, 1], outputRange: ['rgba(74,222,128,0)', 'rgba(74,222,128,0.05)'] });
+
   return (
     <>
       <Text style={styles.cardTitle}>Welcome back</Text>
@@ -166,7 +180,7 @@ function FormContent({
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Email</Text>
-        <View style={[styles.inputContainer, focusedField === 'email' && styles.inputContainerFocused]}>
+        <Animated.View style={[styles.inputContainer, { borderColor: emailBorder, backgroundColor: emailBg }]}>
           <Ionicons
             name="mail-outline"
             size={17}
@@ -183,15 +197,15 @@ function FormContent({
             autoCapitalize="none"
             autoCorrect={false}
             editable={!loading}
-            onFocus={() => setFocusedField('email')}
-            onBlur={() => setFocusedField(null)}
+            onFocus={() => { setFocusedField('email'); animIn(emailGlow); }}
+            onBlur={() => { setFocusedField(null); animOut(emailGlow); }}
           />
-        </View>
+        </Animated.View>
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Password</Text>
-        <View style={[styles.inputContainer, focusedField === 'password' && styles.inputContainerFocused]}>
+        <Animated.View style={[styles.inputContainer, { borderColor: passwordBorder, backgroundColor: passwordBg }]}>
           <Ionicons
             name="lock-closed-outline"
             size={17}
@@ -206,8 +220,8 @@ function FormContent({
             placeholderTextColor={Colors.textMuted}
             secureTextEntry={!showPassword}
             editable={!loading}
-            onFocus={() => setFocusedField('password')}
-            onBlur={() => setFocusedField(null)}
+            onFocus={() => { setFocusedField('password'); animIn(passwordGlow); }}
+            onBlur={() => { setFocusedField(null); animOut(passwordGlow); }}
           />
           <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
             <Ionicons
@@ -216,7 +230,7 @@ function FormContent({
               color={Colors.textMuted}
             />
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
 
       <Pressable
