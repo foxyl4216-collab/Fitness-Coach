@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import type { ComponentProps } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,17 +7,22 @@ import {
   ScrollView,
   Pressable,
   Platform,
+  DimensionValue,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import Animated, { useAnimatedProps, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFitCoach } from '@/lib/context';
 import { useAuth } from '@/lib/auth-context';
+
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+type McIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -222,7 +228,7 @@ export default function HomeScreen() {
               style={[
                 styles.calorieBarFill,
                 {
-                  width: `${Math.min(100, Math.round(calorieProgress * 100))}%` as any,
+                  width: `${Math.min(100, Math.round(calorieProgress * 100))}%` as DimensionValue,
                   backgroundColor: isOver ? Colors.error : Colors.primary,
                 },
               ]}
@@ -232,16 +238,19 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.metricTiles}>
-        {[
-          { icon: 'arm-flex', iconLib: 'mc', value: `${plan.proteinGrams}g`, label: 'protein', color: Colors.violet, bg: 'rgba(167,139,250,0.15)' },
-          { icon: 'calendar-outline', iconLib: 'ion', value: String(weekNumber), label: 'week', color: Colors.accent, bg: 'rgba(0,212,255,0.15)' },
-          { icon: 'flame', iconLib: 'ion', value: String(streak), label: 'streak', color: Colors.primary, bg: 'rgba(74,222,128,0.15)' },
-        ].map((tile) => (
+        {(([
+          { icon: 'arm-flex' as McIconName, iconLib: 'mc' as const, value: `${plan.proteinGrams}g`, label: 'protein', color: Colors.violet, bg: 'rgba(167,139,250,0.15)' },
+          { icon: 'calendar-outline' as IoniconName, iconLib: 'ion' as const, value: String(weekNumber), label: 'week', color: Colors.accent, bg: 'rgba(0,212,255,0.15)' },
+          { icon: 'flame' as IoniconName, iconLib: 'ion' as const, value: String(streak), label: 'streak', color: Colors.primary, bg: 'rgba(74,222,128,0.15)' },
+        ] as (
+          | { icon: McIconName; iconLib: 'mc'; value: string; label: string; color: string; bg: string }
+          | { icon: IoniconName; iconLib: 'ion'; value: string; label: string; color: string; bg: string }
+        )[])).map((tile) => (
           <View key={tile.label} style={styles.metricTile}>
             <View style={[styles.metricTileIcon, { backgroundColor: tile.bg }]}>
               {tile.iconLib === 'mc'
-                ? <MaterialCommunityIcons name={tile.icon as any} size={18} color={tile.color} />
-                : <Ionicons name={tile.icon as any} size={18} color={tile.color} />
+                ? <MaterialCommunityIcons name={tile.icon} size={18} color={tile.color} />
+                : <Ionicons name={tile.icon} size={18} color={tile.color} />
               }
             </View>
             <Text style={[styles.metricTileValue, { color: tile.color }]}>{tile.value}</Text>

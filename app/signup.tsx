@@ -29,6 +29,7 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | 'confirm' | null>(null);
 
   const handleSignup = async () => {
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
@@ -111,6 +112,7 @@ export default function SignupScreen() {
                   confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
                   showPassword={showPassword} setShowPassword={setShowPassword}
                   loading={loading} onSubmit={handleSignup}
+                  focusedField={focusedField} setFocusedField={setFocusedField}
                 />
               </BlurView>
             ) : (
@@ -122,6 +124,7 @@ export default function SignupScreen() {
                   confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
                   showPassword={showPassword} setShowPassword={setShowPassword}
                   loading={loading} onSubmit={handleSignup}
+                  focusedField={focusedField} setFocusedField={setFocusedField}
                 />
               </View>
             )}
@@ -143,6 +146,7 @@ function FormContent({
   error, email, setEmail, password, setPassword,
   confirmPassword, setConfirmPassword,
   showPassword, setShowPassword, loading, onSubmit,
+  focusedField, setFocusedField,
 }: {
   error: string;
   email: string; setEmail: (v: string) => void;
@@ -150,6 +154,8 @@ function FormContent({
   confirmPassword: string; setConfirmPassword: (v: string) => void;
   showPassword: boolean; setShowPassword: (v: boolean) => void;
   loading: boolean; onSubmit: () => void;
+  focusedField: 'email' | 'password' | 'confirm' | null;
+  setFocusedField: (v: 'email' | 'password' | 'confirm' | null) => void;
 }) {
   return (
     <>
@@ -162,8 +168,13 @@ function FormContent({
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Email</Text>
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+        <View style={[styles.inputContainer, focusedField === 'email' && styles.inputContainerFocused]}>
+          <Ionicons
+            name="mail-outline"
+            size={17}
+            color={focusedField === 'email' ? Colors.primary : Colors.textMuted}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={styles.input}
             value={email}
@@ -174,14 +185,21 @@ function FormContent({
             autoCapitalize="none"
             autoCorrect={false}
             editable={!loading}
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Password</Text>
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+        <View style={[styles.inputContainer, focusedField === 'password' && styles.inputContainerFocused]}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={17}
+            color={focusedField === 'password' ? Colors.primary : Colors.textMuted}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={[styles.input, { flex: 1 }]}
             value={password}
@@ -190,6 +208,8 @@ function FormContent({
             placeholderTextColor={Colors.textMuted}
             secureTextEntry={!showPassword}
             editable={!loading}
+            onFocus={() => setFocusedField('password')}
+            onBlur={() => setFocusedField(null)}
           />
           <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
             <Ionicons
@@ -203,8 +223,13 @@ function FormContent({
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Confirm Password</Text>
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+        <View style={[styles.inputContainer, focusedField === 'confirm' && styles.inputContainerFocused]}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={17}
+            color={focusedField === 'confirm' ? Colors.primary : Colors.textMuted}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={styles.input}
             value={confirmPassword}
@@ -213,6 +238,8 @@ function FormContent({
             placeholderTextColor={Colors.textMuted}
             secureTextEntry={!showPassword}
             editable={!loading}
+            onFocus={() => setFocusedField('confirm')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
       </View>
@@ -337,6 +364,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  inputContainerFocused: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(74,222,128,0.04)',
   },
   inputIcon: {
     paddingLeft: 14,

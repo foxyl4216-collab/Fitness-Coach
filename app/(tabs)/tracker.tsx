@@ -81,14 +81,16 @@ export default function TrackerScreen() {
 
   const slideY = useRef(new Animated.Value(0)).current;
 
+  const nativeDriver = Platform.OS !== 'web';
+
   const openModal = () => {
     slideY.setValue(600);
     setShowAddModal(true);
-    Animated.spring(slideY, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
+    Animated.spring(slideY, { toValue: 0, useNativeDriver: nativeDriver, tension: 65, friction: 11 }).start();
   };
 
   const closeModal = () => {
-    Animated.timing(slideY, { toValue: 600, duration: 220, useNativeDriver: true }).start(() => {
+    Animated.timing(slideY, { toValue: 600, duration: 220, useNativeDriver: nativeDriver }).start(() => {
       setShowAddModal(false);
       slideY.setValue(0);
     });

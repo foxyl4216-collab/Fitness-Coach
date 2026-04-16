@@ -28,6 +28,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -100,6 +101,8 @@ export default function LoginScreen() {
                   setShowPassword={setShowPassword}
                   loading={loading}
                   onSubmit={handleLogin}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
                 />
               </BlurView>
             ) : (
@@ -114,6 +117,8 @@ export default function LoginScreen() {
                   setShowPassword={setShowPassword}
                   loading={loading}
                   onSubmit={handleLogin}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
                 />
               </View>
             )}
@@ -134,6 +139,7 @@ export default function LoginScreen() {
 function FormContent({
   error, email, setEmail, password, setPassword,
   showPassword, setShowPassword, loading, onSubmit,
+  focusedField, setFocusedField,
 }: {
   error: string;
   email: string;
@@ -144,6 +150,8 @@ function FormContent({
   setShowPassword: (v: boolean) => void;
   loading: boolean;
   onSubmit: () => void;
+  focusedField: 'email' | 'password' | null;
+  setFocusedField: (v: 'email' | 'password' | null) => void;
 }) {
   return (
     <>
@@ -158,8 +166,13 @@ function FormContent({
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Email</Text>
-        <View style={styles.inputContainer}>
-          <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+        <View style={[styles.inputContainer, focusedField === 'email' && styles.inputContainerFocused]}>
+          <Ionicons
+            name="mail-outline"
+            size={17}
+            color={focusedField === 'email' ? Colors.primary : Colors.textMuted}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={styles.input}
             value={email}
@@ -170,14 +183,21 @@ function FormContent({
             autoCapitalize="none"
             autoCorrect={false}
             editable={!loading}
+            onFocus={() => setFocusedField('email')}
+            onBlur={() => setFocusedField(null)}
           />
         </View>
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>Password</Text>
-        <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={styles.inputIcon} />
+        <View style={[styles.inputContainer, focusedField === 'password' && styles.inputContainerFocused]}>
+          <Ionicons
+            name="lock-closed-outline"
+            size={17}
+            color={focusedField === 'password' ? Colors.primary : Colors.textMuted}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={[styles.input, { flex: 1 }]}
             value={password}
@@ -186,6 +206,8 @@ function FormContent({
             placeholderTextColor={Colors.textMuted}
             secureTextEntry={!showPassword}
             editable={!loading}
+            onFocus={() => setFocusedField('password')}
+            onBlur={() => setFocusedField(null)}
           />
           <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
             <Ionicons
@@ -323,6 +345,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  inputContainerFocused: {
+    borderColor: Colors.primary,
+    backgroundColor: 'rgba(74,222,128,0.04)',
   },
   inputIcon: {
     paddingLeft: 14,
