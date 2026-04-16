@@ -109,6 +109,29 @@ export default function HomeScreen() {
     }
   }, [isLoading, isOnboarded, isAuthenticated, authLoading]);
 
+  const displayName = useMemo(() => {
+    if (user?.displayName) return user.displayName.split(' ')[0];
+    if (user?.email) {
+      const local = user.email.split('@')[0];
+      return local.charAt(0).toUpperCase() + local.slice(1);
+    }
+    return '';
+  }, [user]);
+
+  const streak = useMemo(() => {
+    if (!checkIns.length) return 0;
+    const uniqueWeeks = Array.from(new Set(checkIns.map(c => c.weekNumber))).sort((a, b) => b - a);
+    let count = 1;
+    for (let i = 1; i < uniqueWeeks.length; i++) {
+      if (uniqueWeeks[i - 1] - uniqueWeeks[i] === 1) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  }, [checkIns]);
+
   if (authLoading || isLoading || !isAuthenticated || !isOnboarded || !profile || !plan) {
     return <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]} />;
   }
@@ -125,31 +148,8 @@ export default function HomeScreen() {
   const isOver = caloriesEaten > plan.dailyCalories;
   const overAmount = isOver ? caloriesEaten - plan.dailyCalories : 0;
 
-  const displayName = useMemo(() => {
-    if (user?.displayName) return user.displayName.split(' ')[0];
-    if (user?.email) {
-      const local = user.email.split('@')[0];
-      return local.charAt(0).toUpperCase() + local.slice(1);
-    }
-    return '';
-  }, [user]);
-
   const hourOfDay = today.getHours();
   const greeting = hourOfDay < 12 ? 'Good morning' : hourOfDay < 17 ? 'Good afternoon' : 'Good evening';
-
-  const streak = useMemo(() => {
-    if (!checkIns.length) return 0;
-    const uniqueWeeks = Array.from(new Set(checkIns.map(c => c.weekNumber))).sort((a, b) => b - a);
-    let count = 1;
-    for (let i = 1; i < uniqueWeeks.length; i++) {
-      if (uniqueWeeks[i - 1] - uniqueWeeks[i] === 1) {
-        count++;
-      } else {
-        break;
-      }
-    }
-    return count;
-  }, [checkIns]);
 
   return (
     <ScrollView
