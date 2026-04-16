@@ -4,6 +4,9 @@ import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
 import { logger } from "./utils/logger";
+import { loadEnv } from "./utils/loadEnv";
+
+loadEnv();
 
 process.on("uncaughtException", (err) => {
   logger.error("Uncaught Exception — process will continue", {
@@ -56,7 +59,6 @@ function setupCors(app: express.Application) {
 
     const origin = req.header("origin");
 
-    // Allow localhost origins for Expo web development (any port)
     const isLocalhost =
       origin?.startsWith("http://localhost:") ||
       origin?.startsWith("http://127.0.0.1:");
@@ -82,7 +84,7 @@ function setupCors(app: express.Application) {
 function setupBodyParsing(app: express.Application) {
   app.use(
     express.json({
-      limit: "50mb", // Increased to handle large base64-encoded images from camera
+      limit: "50mb",
       verify: (req, _res, buf) => {
         req.rawBody = buf;
       },

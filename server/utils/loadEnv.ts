@@ -9,13 +9,10 @@ export function loadEnv(): void {
   for (const line of content.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx < 0) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const rawVal = trimmed.slice(eqIdx + 1).trim();
-    const value = rawVal.replace(/^["']|["']$/g, "");
-    if (key && !(key in process.env)) {
-      process.env[key] = value;
-    }
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex < 0) continue;
+    const key = trimmed.slice(0, eqIndex).trim();
+    const value = trimmed.slice(eqIndex + 1).trim().replace(/^["']|["']$/g, "");
+    if (key && !(key in process.env)) process.env[key] = value;
   }
 }
