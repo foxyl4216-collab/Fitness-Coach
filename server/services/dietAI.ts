@@ -1,10 +1,5 @@
-import OpenAI from "openai";
+import { createAIResponse } from "./openRouter";
 import type { MacroTargets } from "../utils/dietCalculator";
-
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
 
 export interface DietPlanMeal {
   meal: string;
@@ -34,6 +29,10 @@ const CUISINE_HINTS: Record<string, string> = {
   global: "Use a diverse mix of global foods from various cuisines. Include dishes from different cultures for variety.",
 };
 
+/**
+ * Generate a personalized diet plan via OpenRouter GPT.
+ * createAIResponse("Give diet plan", "gpt")
+ */
 export async function generateDietPlan(
   macros: MacroTargets,
   preference: string,
@@ -46,28 +45,14 @@ export async function generateDietPlan(
   const prompt = `Daily meal plan: ${macros.calories}kcal, ${macros.protein}g protein, ${macros.carbs}g carbs, ${macros.fat}g fat. Diet: ${preference}. Goal: ${goal}. ${cuisineHint} 4 meals. JSON: {"meals":[{"meal":"Name","time":"8am","foods":[{"name":"Food","qty":"1","cals":100,"prot":10}],"total_cals":100,"total_prot":10}],"daily_totals":{"calories":${macros.calories},"protein":${macros.protein},"carbs":${macros.carbs},"fat":${macros.fat}},"notes":[]}`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "Nutrionist. JSON only.",
-        },
-        { role: "user", content: prompt },
-      ],
-      response_format: { type: "json_object" },
+    const content = await createAIResponse(prompt, "gpt", {
+      systemPrompt: "Nutritionist. JSON only.",
+      jsonMode: true,
+      maxTokens: 1200,
+      temperature: 0.5,
     });
 
-    const content = response.choices[0]?.message?.content;
-    const finishReason = response.choices[0]?.finish_reason;
-
-    if (!content || content.trim().length === 0) {
-      throw new Error(`Empty response from AI (finish_reason: ${finishReason})`);
-    }
-
     const raw = JSON.parse(content);
-    
-    // Map short keys back to long keys if AI used them
     const meals = (raw.meals || []).map((m: any) => ({
       meal: m.meal,
       time: m.time,
@@ -75,10 +60,10 @@ export async function generateDietPlan(
         name: f.name,
         quantity: f.qty || f.quantity,
         calories: f.cals || f.calories,
-        protein: f.prot || f.protein
+        protein: f.prot || f.protein,
       })),
       total_calories: m.total_cals || m.total_calories,
-      total_protein: m.total_prot || m.total_protein
+      total_protein: m.total_prot || m.total_protein,
     }));
 
     const parsed: GeneratedDietPlan = {
@@ -89,16 +74,13 @@ export async function generateDietPlan(
         carbs: macros.carbs,
         fat: macros.fat,
       },
-      notes: raw.notes || []
+      notes: raw.notes || [],
     };
 
-    if (parsed.meals.length === 0) {
-      throw new Error("AI response missing meals");
-    }
-
+    if (parsed.meals.length === 0) throw new Error("AI response missing meals");
     return parsed;
   } catch (err: any) {
-    console.error(`Diet AI failed:`, err.message);
+    console.error("[dietAI] Diet generation failed:", err.message);
     throw new Error(`Failed to generate diet plan: ${err.message}`);
   }
 }

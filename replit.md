@@ -11,7 +11,7 @@ MVP complete with:
 - Weekly workout schedule with detail view
 - Manual calorie tracker with favorites
 - Camera-based calorie logging (AI estimated)
-- AI-powered diet plan generation (GPT-5-nano via OpenAI integration) with Diet tab UI
+- AI-powered diet plan generation (via OpenRouter — GPT-4o-mini) with Diet tab UI
 - Diet plan screen with expandable meal cards, macro targets, and tips
 - Weekly diet adaptation based on check-in weight trends
 - Weekly check-in with adaptive plan updates
@@ -131,6 +131,18 @@ All data routes require `Authorization: Bearer <token>` header.
 - `app/upgrade.tsx` — upgrade screen with plan selection, premium management, cancel
 - Diet tab shows a premium gate banner and lock icon for free users
 - Camera scan button has a lock badge for free users
+
+## AI Services (OpenRouter)
+- **Single API key** (`OPENROUTER_API_KEY` secret) routes to GPT or Gemini via `https://openrouter.ai/api/v1`
+- `server/services/openRouter.ts` — central service, exports:
+  - `createAIResponse(prompt, "gpt"|"gemini", options)` — text completions
+  - `createAIVisionResponse(prompt, base64, mimeType, "gpt"|"gemini", options)` — vision/image tasks
+- Model mapping: `"gpt"` → `openai/gpt-4o-mini` | `"gemini"` → `google/gemini-flash-1.5`
+- `server/services/openaiService.ts` — diet, workout, adaptation generation (uses `"gpt"`)
+- `server/services/geminiService.ts` — food image analysis (uses `"gemini"` vision)
+- `server/services/dietAI.ts` — fallback diet plan generation (uses `"gpt"`)
+- `server/services/foodVisionAI.ts` — food vision scan (uses `"gpt"` vision)
+- All AI calls route through OpenRouter — no direct OpenAI or Gemini SDK usage
 
 ## User Preferences
 - Dark theme with black background and light green (#4ADE80) accents
