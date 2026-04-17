@@ -157,9 +157,9 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>{displayName ? `${greeting}, ${displayName}` : `Week ${weekNumber}`}</Text>
-          <Text style={styles.goalLabel}>
+        <View style={styles.headerText}>
+          <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">{displayName ? `${greeting}, ${displayName}` : `Week ${weekNumber}`}</Text>
+          <Text style={styles.goalLabel} numberOfLines={1}>
             {displayName ? `Week ${weekNumber} · ` : ''}
             {profile.goal === 'fat_loss' ? 'Fat Loss' : 'Muscle Gain'}
             {profile.focusTrack !== 'none' && (
@@ -377,6 +377,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 20,
+  },
+  headerText: {
+    flex: 1,
+    marginRight: 12,
   },
   greeting: {
     fontSize: 24,
