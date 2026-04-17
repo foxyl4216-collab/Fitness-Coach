@@ -476,7 +476,7 @@ function generateStandardWorkouts(profile: UserProfile): WorkoutDay[] {
 }
 
 function generateWorkouts(profile: UserProfile): WorkoutDay[] {
-  if (profile.experience === 'advanced') {
+  if (profile.experience === 'experienced') {
     return generateAdvancedWorkouts(profile);
   }
   return generateStandardWorkouts(profile);
@@ -526,7 +526,7 @@ export function regenerateWorkoutDay(
 
   let newExercises: Exercise[];
 
-  if (profile.experience === 'advanced') {
+  if (profile.experience === 'experienced') {
     const clampedDays = Math.min(Math.max(profile.daysPerWeek, 1), 7) as keyof typeof BASE_SPLITS;
     const splitMap =
       profile.focusTrack === 'belly_fat' ? SPLIT_BELLY_FAT :
@@ -572,7 +572,7 @@ export function generateInitialPlan(profile: UserProfile): WeeklyPlan {
     explanation = `Your plan starts with a +250 calorie surplus to build lean muscle while minimizing fat gain. You'll focus on progressive overload with compound movements across ${profile.daysPerWeek} training days.`;
   }
 
-  if (profile.experience === 'advanced') {
+  if (profile.experience === 'experienced') {
     explanation += ' As an advanced lifter, each session targets 2 muscle groups with 5 exercises each for maximum volume and specificity.';
   }
 

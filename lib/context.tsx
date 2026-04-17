@@ -55,12 +55,24 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
       ]);
       setIsOnboarded(onboarded);
       setProfile(prof);
-      setPlan(pl);
       setDietPlan(dp);
       setCheckIns(checks);
       setFoodLog(foods);
       setSavedFoods(saved);
       setWeekNumber(week);
+
+      if (prof && pl && prof.experience === 'experienced') {
+        const firstExerciseCount = pl.workouts.find(w => !w.isRestDay)?.exercises?.length ?? 0;
+        if (firstExerciseCount < 8) {
+          const regenPlan = { ...generateInitialPlan(prof), weekNumber: pl.weekNumber, dailyCalories: pl.dailyCalories, proteinGrams: pl.proteinGrams };
+          await Storage.savePlan(regenPlan);
+          setPlan(regenPlan);
+        } else {
+          setPlan(pl);
+        }
+      } else {
+        setPlan(pl);
+      }
 
       if (isAuthenticated && !onboarded) {
         try {
@@ -87,11 +99,20 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
             const planRes = await apiRequest('GET', '/api/weekly-plan/current');
             const planData = await planRes.json();
             if (planData.plan) {
+              const storedWorkouts: Storage.WorkoutDay[] = planData.plan.workout_json?.workouts || [];
+              const isExperienced = backendProfile.experience === 'experienced';
+              const firstWorkoutExercises = storedWorkouts.find(w => !w.isRestDay)?.exercises?.length ?? 0;
+              const needsRegen = isExperienced && firstWorkoutExercises < 8;
+
+              const workouts = needsRegen
+                ? generateInitialPlan(backendProfile).workouts
+                : storedWorkouts;
+
               const backendPlan: Storage.WeeklyPlan = {
                 weekNumber: planData.plan.week_number,
                 dailyCalories: planData.plan.calorie_target || 2000,
                 proteinGrams: planData.plan.workout_json?.proteinGrams || 120,
-                workouts: planData.plan.workout_json?.workouts || [],
+                workouts,
                 dietTips: planData.plan.workout_json?.dietTips || [],
                 explanation: planData.plan.workout_json?.explanation || '',
                 createdAt: planData.plan.created_at,
