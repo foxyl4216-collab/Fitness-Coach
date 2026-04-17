@@ -510,6 +510,53 @@ function getDietTips(profile: UserProfile): string[] {
   return tips;
 }
 
+// ─── REGENERATE A SINGLE DAY ─────────────────────────────────────────────────
+
+export function regenerateWorkoutDay(
+  plan: WeeklyPlan,
+  dayIndex: number,
+  profile: UserProfile,
+): WeeklyPlan {
+  const workout = plan.workouts[dayIndex];
+  if (!workout || workout.isRestDay) return plan;
+
+  const workoutSessionIndex = plan.workouts
+    .slice(0, dayIndex)
+    .filter(w => !w.isRestDay).length;
+
+  let newExercises: Exercise[];
+
+  if (profile.experience === 'advanced') {
+    const clampedDays = Math.min(Math.max(profile.daysPerWeek, 1), 7) as keyof typeof BASE_SPLITS;
+    const splitMap =
+      profile.focusTrack === 'belly_fat' ? SPLIT_BELLY_FAT :
+      profile.focusTrack === 'glute_gain' ? SPLIT_GLUTE :
+      BASE_SPLITS;
+    const pairs = splitMap[clampedDays] || BASE_SPLITS[clampedDays];
+    const [mg1, mg2] = pairs[workoutSessionIndex % pairs.length];
+    const pool1 = getMuscleGroupPool(mg1, profile.equipment);
+    const pool2 = getMuscleGroupPool(mg2, profile.equipment);
+    newExercises = [...pickFrom(pool1, 5), ...pickFrom(pool2, 5)];
+  } else {
+    const pool = getExercisePool(profile);
+    const exercisesPerDay = profile.experience === 'beginner' ? 4 : 5;
+    let exercises = pickFrom(pool, exercisesPerDay);
+    if (profile.focusTrack === 'belly_fat') {
+      exercises = [...exercises.slice(0, exercisesPerDay - 1), ...pickFrom(CORE_EXERCISES, 2)];
+    }
+    if (profile.focusTrack === 'glute_gain') {
+      exercises = [...exercises.slice(0, exercisesPerDay - 1), ...pickFrom(GLUTE_EXERCISES, 2)];
+    }
+    newExercises = exercises;
+  }
+
+  const updatedWorkouts = plan.workouts.map((w, i) =>
+    i === dayIndex ? { ...w, exercises: newExercises } : w
+  );
+
+  return { ...plan, workouts: updatedWorkouts };
+}
+
 // ─── EXPORTS ──────────────────────────────────────────────────────────────────
 
 export function generateInitialPlan(profile: UserProfile): WeeklyPlan {

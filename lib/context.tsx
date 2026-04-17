@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import * as Storage from './storage';
-import { generateInitialPlan, adaptPlan } from './fitness-engine';
+import { generateInitialPlan, adaptPlan, regenerateWorkoutDay } from './fitness-engine';
 import { useAuth } from './auth-context';
 import { apiRequest } from './query-client';
 
@@ -21,6 +21,7 @@ interface FitCoachContextValue {
   saveFavoriteFood: (food: Storage.SavedFood) => Promise<void>;
   submitCheckIn: (checkIn: Omit<Storage.CheckIn, 'date'>) => Promise<void>;
   generateDietPlan: () => Promise<void>;
+  regenerateDayWorkout: (dayIndex: number) => Promise<void>;
   resetApp: () => Promise<void>;
   refreshData: () => Promise<void>;
 }
@@ -319,6 +320,14 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const regenerateDayWorkout = async (dayIndex: number) => {
+    if (!plan || !profile) return;
+    const newPlan = regenerateWorkoutDay(plan, dayIndex, profile);
+    await Storage.savePlan(newPlan);
+    setPlan(newPlan);
+    syncPlanToBackend(newPlan);
+  };
+
   const resetApp = async () => {
     await Storage.clearAllData();
     setProfile(null);
@@ -350,6 +359,7 @@ export function FitCoachProvider({ children }: { children: ReactNode }) {
     saveFavoriteFood,
     submitCheckIn,
     generateDietPlan: handleGenerateDietPlan,
+    regenerateDayWorkout,
     resetApp,
     refreshData,
   }), [profile, plan, dietPlan, checkIns, foodLog, savedFoods, isOnboarded, isLoading, weekNumber, dietLoading, isAuthenticated]);

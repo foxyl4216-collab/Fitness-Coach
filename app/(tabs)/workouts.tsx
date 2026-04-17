@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +18,19 @@ import { useFitCoach } from '@/lib/context';
 
 export default function WorkoutsScreen() {
   const insets = useSafeAreaInsets();
-  const { plan, weekNumber, profile } = useFitCoach();
+  const { plan, weekNumber, profile, regenerateDayWorkout } = useFitCoach();
+  const [regeneratingDay, setRegeneratingDay] = useState<number | null>(null);
+
+  const handleRegenerate = async (dayIndex: number) => {
+    if (regeneratingDay !== null) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setRegeneratingDay(dayIndex);
+    try {
+      await regenerateDayWorkout(dayIndex);
+    } finally {
+      setRegeneratingDay(null);
+    }
+  };
 
   if (!plan || !profile) {
     return (
@@ -159,11 +172,30 @@ export default function WorkoutsScreen() {
                     )}
                   </View>
                   {!workout.isRestDay && (
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color={isToday ? Colors.primary : Colors.textMuted}
-                    />
+                    <View style={styles.cardActions}>
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          handleRegenerate(i);
+                        }}
+                        style={({ pressed }) => [
+                          styles.shuffleBtn,
+                          pressed && { opacity: 0.6 },
+                        ]}
+                        hitSlop={8}
+                      >
+                        {regeneratingDay === i ? (
+                          <ActivityIndicator size="small" color={Colors.primary} />
+                        ) : (
+                          <Ionicons name="shuffle-outline" size={17} color={isToday ? Colors.primary : Colors.textMuted} />
+                        )}
+                      </Pressable>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={isToday ? Colors.primary : Colors.textMuted}
+                      />
+                    </View>
                   )}
                 </View>
               </Pressable>
@@ -391,5 +423,18 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  shuffleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
