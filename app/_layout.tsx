@@ -7,7 +7,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth-context";
 import { FitCoachProvider } from "@/lib/context";
@@ -75,7 +74,6 @@ export default function RootLayout() {
                   <FitCoachProvider>
                     <StatusBar style="light" />
                     <RootLayoutNav />
-                    <OfflineBanner />
                   </FitCoachProvider>
                 </SubscriptionProvider>
               </AuthProvider>
